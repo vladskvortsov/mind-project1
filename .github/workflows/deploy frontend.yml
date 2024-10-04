@@ -1,0 +1,51 @@
+name: Deploy Static Website to S3 and CloudFront
+on:
+  workflow_dispatch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Step 1: Create an S3 Bucket
+      - name: Create S3 bucket if it doesn't exist
+        id: create_s3_bucket
+        run: |
+          BUCKET_NAME="project1-frontend-production" # Unique bucket name
+          aws s3api head-bucket --bucket "$BUCKET_NAME" || aws s3api create-bucket --bucket "$BUCKET_NAME" --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}
+          echo "AWS_BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+
+      # Step 2: Configure S3 bucket for static website hosting
+      - name: Enable static website hosting on S3
+        run: |
+          aws s3 website s3://$AWS_BUCKET_NAME/ --index-document index.html
+
+      # Step 3: Sync files to S3
+      - name: Sync files to S3
+        run: |
+          aws s3 sync ./project1/frontend s3://$AWS_BUCKET_NAME --delete
+
+      # Step 4: Create CloudFront Distribution
+      - name: Create CloudFront Distribution if not exists
+        id: create_cloudfront
+        run: |
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${AWS_BUCKET_NAME}.s3.amazonaws.com']].Id" --output text)
+          if [ -z "$DISTRIBUTION_ID" ]; then
+            DISTRIBUTION_ID=$(aws cloudfront create-distribution --origin-domain-name "${AWS_BUCKET_NAME}.s3.amazonaws.com" --default-root-object index.html --query "Distribution.Id" --output text)
+          fi
+          echo "AWS_DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
+
+      # Step 5: Invalidate CloudFront Cache
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id $AWS_DISTRIBUTION_ID --paths "/*"
