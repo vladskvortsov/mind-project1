@@ -74,7 +74,7 @@ jobs:
             --query "OriginAccessControl.Id" \
             --output text)
           echo "CLOUDFRONT_OAC_ID=$OAC_ID" >> $GITHUB_ENV
-          
+
       # Step 2: Create CloudFront Distribution
       - name: Create CloudFront Distribution if not exists
         id: create_cloudfront
@@ -99,7 +99,8 @@ jobs:
       # Step 3: Set S3 bucket policy to allow CloudFront access
       - name: Set S3 bucket policy to allow CloudFront access
         run: |
-          aws s3api put-bucket-policy --bucket "$AWS_BUCKET_NAME" --policy '{
+          aws s3api put-bucket-policy --bucket "$AWS_BUCKET_NAME" --policy "$(cat <<EOF
+          {
             "Version": "2012-10-17",
             "Statement": [
               {
@@ -108,15 +109,17 @@ jobs:
                   "Service": "cloudfront.amazonaws.com"
                 },
                 "Action": "s3:GetObject",
-                "Resource": "arn:aws:s3:::'$AWS_BUCKET_NAME'/*",
+                "Resource": "arn:aws:s3:::$AWS_BUCKET_NAME/*",
                 "Condition": {
                   "StringEquals": {
-                    "AWS:SourceArn": "arn:aws:cloudfront::'$YOUR_AWS_ACCOUNT_ID':distribution/$AWS_DISTRIBUTION_ID"
+                    "AWS:SourceArn": "arn:aws:cloudfront::$YOUR_AWS_ACCOUNT_ID:distribution/$AWS_DISTRIBUTION_ID"
                   }
                 }
               }
             ]
-          }'
+          }
+          EOF
+          )"
 
       # Step 4: Invalidate CloudFront Cache
       - name: Invalidate CloudFront cache
