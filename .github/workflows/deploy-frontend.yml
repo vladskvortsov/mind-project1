@@ -94,7 +94,7 @@ jobs:
                       "Id": "S3OAC-production",
                       "DomainName": "'"${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.amazonaws.com"'",
                       "S3OriginConfig": {
-                        "OriginAccessControlId": "'"$CLOUDFRONT_OAC_ID"'"
+                        "OriginAccessIdentity": ""
                       }
                     }
                   ],
@@ -102,12 +102,34 @@ jobs:
                 },
                 "DefaultCacheBehavior": {
                   "TargetOriginId": "S3OAC-production",
-                  "ViewerProtocolPolicy": "redirect-to-https"
+                  "ViewerProtocolPolicy": "redirect-to-https",
+                  "AllowedMethods": {
+                    "Quantity": 2,
+                    "Items": [
+                      "HEAD",
+                      "GET"
+                    ]
+                  },
+                  "ForwardedValues": {
+                    "QueryString": false,
+                    "Cookies": {
+                      "Forward": "none"
+                    }
+                  },
+                  "TrustedSigners": {
+                    "Enabled": false,
+                    "Quantity": 0
+                  },
+                  "DefaultTTL": 86400,
+                  "MaxTTL": 31536000,
+                  "MinTTL": 0
                 },
+                "Comment": "Created by GitHub Actions",
                 "Enabled": true,
                 "DefaultRootObject": "templates/index.html"
               }' \
               --query "Distribution.Id" --output text)
+
           fi
           echo "AWS_DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
           echo "$DISTRIBUTION_ID"
