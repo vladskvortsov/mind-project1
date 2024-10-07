@@ -29,7 +29,7 @@ jobs:
       # Step 2: Sync files to S3
       - name: Sync files to S3
         run: |
-          aws s3 sync ./project1/frontend/ s3://$AWS_BUCKET_NAME --delete
+          aws s3 sync ./project1/frontend/ s3://$BUCKET_NAME --delete
 
 
 
