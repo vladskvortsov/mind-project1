@@ -94,7 +94,7 @@ jobs:
                       "Id": "S3OAC-production",
                       "DomainName": "'"${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.amazonaws.com"'",
                       "S3OriginConfig": {
-                        "OriginAccessIdentity": ""
+                        "OriginAccessId": "$CLOUDFRONT_OAC_ID"
                       }
                     }
                   ],
