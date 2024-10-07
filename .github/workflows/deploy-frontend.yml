@@ -32,6 +32,7 @@ jobs:
         run: |
           aws s3 sync ./project1/frontend/ s3://$AWS_BUCKET_NAME --delete
 
+          echo "${{ steps.create_s3_bucket.outputs.aws_bucket_name }}"
 
 
   create-cloudfront:
