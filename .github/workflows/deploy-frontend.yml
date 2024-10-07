@@ -23,8 +23,8 @@ jobs:
           BUCKET_NAME="project1-frontend-production" # Unique bucket name
           aws s3api head-bucket --bucket "$BUCKET_NAME" || aws s3api create-bucket --bucket "$BUCKET_NAME" --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}
           echo "AWS_BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
-        outputs:
-          bucket_name: $BUCKET_NAME  # Save bucket name as job output
+          echo "::set-output name=aws_bucket_name::$BUCKET_NAME"
+
 
       # Step 2: Sync files to S3
       - name: Sync files to S3
