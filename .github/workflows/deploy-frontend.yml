@@ -84,7 +84,7 @@ jobs:
         id: create_cloudfront
         run: |
           DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.amazonaws.com']].Id" --output text)
-          if [ -z "$DISTRIBUTION_ID" ]; then
+          if [ "$DISTRIBUTION_ID" == "None" ]; then
             DISTRIBUTION_ID=$(aws cloudfront create-distribution \
               --distribution-config '{
                 "CallerReference": "'"$(date +%s)"'",
@@ -111,7 +111,7 @@ jobs:
           fi
           echo "AWS_DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
           echo "$DISTRIBUTION_ID"
-
+          echo "$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='project1-frontend-production.s3.amazonaws.com']].Id" --output text)"
       # Step 3: Set S3 bucket policy to allow CloudFront access
       - name: Set S3 bucket policy to allow CloudFront access
         run: |
