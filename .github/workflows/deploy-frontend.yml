@@ -79,16 +79,16 @@ jobs:
       - name: Create CloudFront Distribution if not exists
         id: create_cloudfront
         run: |
-          DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${AWS_BUCKET_NAME}.s3.amazonaws.com']].Id" --output text)
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${BUCKET_NAME}.s3.amazonaws.com']].Id" --output text)
           if [ -z "$DISTRIBUTION_ID" ]; then
             DISTRIBUTION_ID=$(aws cloudfront create-distribution \
-              --origin-domain-name "${AWS_BUCKET_NAME}.s3.amazonaws.com" \
+              --origin-domain-name "${BUCKET_NAME}.s3.amazonaws.com" \
               --default-root-object templates/index.html \
               --query "Distribution.Id" --output text \
               --origins Items[ \
                 { \
                   "Id": "S3OAC-production", \
-                  "DomainName": "${AWS_BUCKET_NAME}.s3.amazonaws.com", \
+                  "DomainName": "${BUCKET_NAME}.s3.amazonaws.com", \
                   "S3OriginConfig": { \
                     "OriginAccessControlId": "$CLOUDFRONT_OAC_ID" \
                   } \
@@ -99,7 +99,7 @@ jobs:
       # Step 3: Set S3 bucket policy to allow CloudFront access
       - name: Set S3 bucket policy to allow CloudFront access
         run: |
-          aws s3api put-bucket-policy --bucket "$AWS_BUCKET_NAME" --policy "$(cat <<EOF
+          aws s3api put-bucket-policy --bucket "$BUCKET_NAME" --policy "$(cat <<EOF
           {
             "Version": "2012-10-17",
             "Statement": [
@@ -109,7 +109,7 @@ jobs:
                   "Service": "cloudfront.amazonaws.com"
                 },
                 "Action": "s3:GetObject",
-                "Resource": "arn:aws:s3:::$AWS_BUCKET_NAME/*",
+                "Resource": "arn:aws:s3:::$BUCKET_NAME/*",
                 "Condition": {
                   "StringEquals": {
                     "AWS:SourceArn": "arn:aws:cloudfront::$YOUR_AWS_ACCOUNT_ID:distribution/$AWS_DISTRIBUTION_ID"
