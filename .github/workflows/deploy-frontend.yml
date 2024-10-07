@@ -1,6 +1,11 @@
 name: Deploy S3 and CloudFront
-on: workflow_dispatch
-
+on: 
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'project1/frontend/*'
 jobs:
   create-sync-s3:
     runs-on: ubuntu-latest
