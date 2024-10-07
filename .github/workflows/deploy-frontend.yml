@@ -4,6 +4,8 @@ on: workflow_dispatch
 jobs:
   create-sync-s3:
     runs-on: ubuntu-latest
+    outputs:
+      aws_bucket_name: ${{ steps.create_s3_bucket.outputs.bucket_name }}  # Define job output
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -21,6 +23,8 @@ jobs:
           BUCKET_NAME="project1-frontend-production" # Unique bucket name
           aws s3api head-bucket --bucket "$BUCKET_NAME" || aws s3api create-bucket --bucket "$BUCKET_NAME" --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}
           echo "AWS_BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+        outputs:
+          bucket_name: $BUCKET_NAME  # Save bucket name as job output
 
       # Step 2: Sync files to S3
       - name: Sync files to S3
@@ -79,16 +83,16 @@ jobs:
       - name: Create CloudFront Distribution if not exists
         id: create_cloudfront
         run: |
-          DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${AWS_BUCKET_NAME}.s3.amazonaws.com']].Id" --output text)
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.amazonaws.com']].Id" --output text)
           if [ -z "$DISTRIBUTION_ID" ]; then
             DISTRIBUTION_ID=$(aws cloudfront create-distribution \
-              --origin-domain-name "${AWS_BUCKET_NAME}.s3.amazonaws.com" \
+              --origin-domain-name "${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.amazonaws.com" \
               --default-root-object templates/index.html \
               --query "Distribution.Id" --output text \
               --origins Items[ \
                 { \
                   "Id": "S3OAC-production", \
-                  "DomainName": "${AWS_BUCKET_NAME}.s3.amazonaws.com", \
+                  "DomainName": "${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.amazonaws.com", \
                   "S3OriginConfig": { \
                     "OriginAccessControlId": "$CLOUDFRONT_OAC_ID" \
                   } \
@@ -99,7 +103,7 @@ jobs:
       # Step 3: Set S3 bucket policy to allow CloudFront access
       - name: Set S3 bucket policy to allow CloudFront access
         run: |
-          aws s3api put-bucket-policy --bucket "${AWS_BUCKET_NAME}" --policy "$(cat <<EOF
+          aws s3api put-bucket-policy --bucket "${{ needs.create-sync-s3.outputs.aws_bucket_name }}" --policy "$(cat <<EOF
           {
             "Version": "2012-10-17",
             "Statement": [
@@ -109,7 +113,7 @@ jobs:
                   "Service": "cloudfront.amazonaws.com"
                 },
                 "Action": "s3:GetObject",
-                "Resource": "arn:aws:s3:::$BUCKET_NAME/*",
+                "Resource": "arn:aws:s3:::${{ needs.create-sync-s3.outputs.aws_bucket_name }}/*",
                 "Condition": {
                   "StringEquals": {
                     "AWS:SourceArn": "arn:aws:cloudfront::$YOUR_AWS_ACCOUNT_ID:distribution/$AWS_DISTRIBUTION_ID"
