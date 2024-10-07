@@ -43,24 +43,31 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       # Step 1: Create CloudFront Origin Access Control
-      - name: Create CloudFront Origin Access Control (OAC)
-        id: create_oac
+      - name: Check if CloudFront OAC exists
+        id: check_oac
         run: |
-          OAC_CONFIG=$(cat <<EOF
-          {
-            "Name": "S3OAC-production",
-            "OriginAccessControlOriginType": "s3",
-            "SigningProtocol": "sigv4",
-            "SigningBehavior": "always",
-            "Description": "OAC for CloudFront to access S3 bucket"
-          }
-          EOF
-          )
-          OAC_ID=$(aws cloudfront create-origin-access-control \
-            --origin-access-control-config "$OAC_CONFIG" \
-            --query "OriginAccessControl.Id" \
+          OAC_ID=$(aws cloudfront list-origin-access-controls \
+            --query "OriginAccessControlList.Items[?Name=='S3OAC-production'].Id | [0]" \
             --output text)
-          echo "CLOUDFRONT_OAC_ID=$OAC_ID" >> $GITHUB_ENV
+          
+          if [ "$OAC_ID" == "None" ]; then
+              OAC_CONFIG=$(cat <<EOF
+              {
+                "Name": "S3OAC-production",
+                "OriginAccessControlOriginType": "s3",
+                "SigningProtocol": "sigv4",
+                "SigningBehavior": "always",
+                "Description": "OAC for CloudFront to access S3 bucket"
+              }
+              EOF
+              )
+              OAC_ID=$(aws cloudfront create-origin-access-control \
+                --origin-access-control-config "$OAC_CONFIG" \
+                --query "OriginAccessControl.Id" \
+                --output text)
+              echo "CLOUDFRONT_OAC_ID=$OAC_ID" >> $GITHUB_ENV
+          fi
+          echo "OAC_ID=$OAC_ID" >> $GITHUB_ENV
 
       # Step 2: Create CloudFront Distribution
       - name: Create CloudFront Distribution if not exists
