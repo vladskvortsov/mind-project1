@@ -46,13 +46,20 @@ jobs:
       - name: Create CloudFront Origin Access Control (OAC)
         id: create_oac
         run: |
+          OAC_CONFIG=$(cat <<EOF
+          {
+            "Name": "S3OAC-production",
+            "OriginAccessControlType": "s3",
+            "SigningProtocol": "sigv4",
+            "SigningBehavior": "always",
+            "Description": "OAC for CloudFront to access S3 bucket"
+          }
+          EOF
+          )
           OAC_ID=$(aws cloudfront create-origin-access-control \
-            --origin-access-control-config CallerReference="${GITHUB_SHA::6}-oac" \
-            --name "S3OAC-${GITHUB_SHA::6}" \
-            --origin-access-control-type "s3" \
-            --signing-protocol "sigv4" \
-            --signing-behavior "always" \
-            --query "OriginAccessControl.Id" --output text)
+            --origin-access-control-config "$OAC_CONFIG" \
+            --query "OriginAccessControl.Id" \
+            --output text)
           echo "CLOUDFRONT_OAC_ID=$OAC_ID" >> $GITHUB_ENV
 
       # Step 2: Create CloudFront Distribution
@@ -67,7 +74,7 @@ jobs:
               --query "Distribution.Id" --output text \
               --origins Items[ \
                 { \
-                  "Id": "S3OAC-production-oac", \
+                  "Id": "S3OAC-production", \
                   "DomainName": "${AWS_BUCKET_NAME}.s3.amazonaws.com", \
                   "S3OriginConfig": { \
                     "OriginAccessControlId": "$CLOUDFRONT_OAC_ID" \
