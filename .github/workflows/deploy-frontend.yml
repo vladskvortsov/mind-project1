@@ -86,7 +86,7 @@ jobs:
       # Step 3: Set S3 bucket policy to allow CloudFront access
       - name: Set S3 bucket policy to allow CloudFront access
         run: |
-          aws s3api put-bucket-policy --bucket $AWS_BUCKET_NAME --policy '{
+          aws s3api put-bucket-policy --bucket "$AWS_BUCKET_NAME" --policy '{
             "Version": "2012-10-17",
             "Statement": [
               {
