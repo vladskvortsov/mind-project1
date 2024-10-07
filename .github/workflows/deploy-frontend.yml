@@ -49,7 +49,7 @@ jobs:
           OAC_CONFIG=$(cat <<EOF
           {
             "Name": "S3OAC-production",
-            "OriginAccessControlType": "s3",
+            "OriginAccessControlOriginType": "s3",
             "SigningProtocol": "sigv4",
             "SigningBehavior": "always",
             "Description": "OAC for CloudFront to access S3 bucket"
