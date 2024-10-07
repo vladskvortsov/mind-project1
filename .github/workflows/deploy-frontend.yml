@@ -22,15 +22,12 @@ jobs:
           aws s3api head-bucket --bucket "$BUCKET_NAME" || aws s3api create-bucket --bucket "$BUCKET_NAME" --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}
           echo "AWS_BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
 
-      # Step 2: Configure S3 bucket for static website hosting
-      - name: Enable static website hosting on S3
-        run: |
-          aws s3 website s3://$AWS_BUCKET_NAME/ --index-document templates/index.html
-
-      # Step 3: Sync files to S3
+      # Step 2: Sync files to S3
       - name: Sync files to S3
         run: |
           aws s3 sync ./project1/frontend/ s3://$AWS_BUCKET_NAME --delete
+
+
 
   create-cloudfront:
     runs-on: ubuntu-latest
@@ -45,18 +42,64 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 1: Create CloudFront Distribution
+      # Step 1: Create CloudFront Origin Access Control
+      - name: Create CloudFront Origin Access Control (OAC)
+        id: create_oac
+        run: |
+          OAC_ID=$(aws cloudfront create-origin-access-control \
+            --origin-access-control-config CallerReference="production-oac" \
+            --name "S3OAC-production-oac" \
+            --origin-access-control-type "s3" \
+            --signing-protocol "sigv4" \
+            --signing-behavior "always" \
+            --query "OriginAccessControl.Id" --output text)
+          echo "CLOUDFRONT_OAC_ID=$OAC_ID" >> $GITHUB_ENV
+
+      # Step 2: Create CloudFront Distribution
       - name: Create CloudFront Distribution if not exists
         id: create_cloudfront
         run: |
           DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${AWS_BUCKET_NAME}.s3.amazonaws.com']].Id" --output text)
           if [ -z "$DISTRIBUTION_ID" ]; then
-            DISTRIBUTION_ID=$(aws cloudfront create-distribution --origin-domain-name "${AWS_BUCKET_NAME}.s3.amazonaws.com" --default-root-object templates/index.html --query "Distribution.Id" --output text)
+            DISTRIBUTION_ID=$(aws cloudfront create-distribution \
+              --origin-domain-name "${AWS_BUCKET_NAME}.s3.amazonaws.com" \
+              --default-root-object templates/index.html \
+              --query "Distribution.Id" --output text \
+              --origins Items[ \
+                { \
+                  "Id": "S3OAC-production-oac", \
+                  "DomainName": "${AWS_BUCKET_NAME}.s3.amazonaws.com", \
+                  "S3OriginConfig": { \
+                    "OriginAccessControlId": "$CLOUDFRONT_OAC_ID" \
+                  } \
+                }])
           fi
           echo "AWS_DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
-          echo "$GITHUB_ENV"
 
-      # Step 2: Invalidate CloudFront Cache
+      # Step 3: Set S3 bucket policy to allow CloudFront access
+      - name: Set S3 bucket policy to allow CloudFront access
+        run: |
+          aws s3api put-bucket-policy --bucket $AWS_BUCKET_NAME --policy '{
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "cloudfront.amazonaws.com"
+                },
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::'$AWS_BUCKET_NAME'/*",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceArn": "arn:aws:cloudfront::'$YOUR_AWS_ACCOUNT_ID':distribution/$AWS_DISTRIBUTION_ID"
+                  }
+                }
+              }
+            ]
+          }'
+
+      # Step 4: Invalidate CloudFront Cache
       - name: Invalidate CloudFront cache
         run: |
           aws cloudfront create-invalidation --distribution-id $AWS_DISTRIBUTION_ID --paths "/*"
+
