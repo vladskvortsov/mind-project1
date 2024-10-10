@@ -8,10 +8,13 @@ on:
   #     - 'project1/backend_redis/*'
   #     - 'project1/backend_rds/*'
 jobs:
-  deploy-ecs:
+  deploy-vpc:
     runs-on: ubuntu-latest
     outputs: 
-      ecs_dns_record: ${{ steps.ecs.outputs.ecs_dns_record }}
+      vpc_id: ${{ steps.create_vpc.outputs.vpc_id }}
+      public_subnet_id: ${{ steps.create_subnets.outputs.public_subnet_id }}
+      private_subnet_id: ${{ steps.create_subnets.outputs.private_subnet_id }}
+
     steps:
     - name: Create VPC
       id: create_vpc
@@ -20,6 +23,8 @@ jobs:
         aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-support
         aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-hostnames
         echo "VPC_ID=$VPC_ID" >> $GITHUB_ENV
+        echo "vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
+
 
     - name: Create Subnets
       id: create_subnets
@@ -28,6 +33,8 @@ jobs:
         PRIVATE_SUBNET_ID=$(aws ec2 create-subnet --vpc-id ${{ env.VPC_ID }} --cidr-block 10.0.2.0/24 --query 'Subnet.SubnetId' --output text)
         echo "PUBLIC_SUBNET_ID=$PUBLIC_SUBNET_ID" >> $GITHUB_ENV
         echo "PRIVATE_SUBNET_ID=$PRIVATE_SUBNET_ID" >> $GITHUB_ENV
+        echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
+        echo "private_subnet_id=$PRIVATE_SUBNET_ID" >> $GITHUB_OUTPUT
 
     - name: Create Internet Gateway and Route Table
       id: create_igw
@@ -49,55 +56,65 @@ jobs:
         echo "ECS_SG_ID=$ECS_SG_ID" >> $GITHUB_ENV
         echo "ALB_SG_ID=$ALB_SG_ID" >> $GITHUB_ENV
 
+        echo "${{ steps.create_vpc.outputs.vpc_id }}"
+        echo "${{ steps.create_subnets.outputs.public_subnet_id }}"
+        echo "${{ steps.create_subnets.outputs.private_subnet_id }}"
 
-    - name: Create ALB and ECS Cluster
-      uses: bitovi/github-actions-deploy-ecs@v0.1.4
-      id: ecs
-      with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws_default_region: ${{ secrets.AWS_REGION }}
+  # deploy-ecs:
+  #   runs-on: ubuntu-latest
+  #   needs: deploy-vpc
+  #   outputs: 
+  #     ecs_dns_record: ${{ steps.ecs.outputs.ecs_dns_record }}
+  #   steps:
 
-        #tf_stack_destroy: true
-        tf_state_bucket_destroy: true
+  #   - name: Create ALB and ECS Cluster
+  #     uses: bitovi/github-actions-deploy-ecs@v0.1.4
+  #     id: ecs
+  #     with:
+  #       aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #       aws_default_region: ${{ secrets.AWS_REGION }}
 
-        aws_ecs_enable:	true
-        aws_ecs_cluster_name: backend-cluster
-        aws_ecs_service_name: backend-service
-        # aws_ecs_security_group_name:
-        aws_ecs_autoscaling_min_nodes: 2
-        aws_ecs_node_count: 2
-        aws_ecs_autoscaling_max_nodes: 4
+  #       #tf_stack_destroy: true
+  #       tf_state_bucket_destroy: true
+
+  #       aws_ecs_enable:	true
+  #       aws_ecs_cluster_name: backend-cluster
+  #       aws_ecs_service_name: backend-service
+  #       # aws_ecs_security_group_name:
+  #       aws_ecs_autoscaling_min_nodes: 2
+  #       aws_ecs_node_count: 2
+  #       aws_ecs_autoscaling_max_nodes: 4
 
 
-        # Each comma separated value is for each consecutive container
-        aws_ecs_task_cpu: 1,1
-        aws_ecs_task_mem: 1024,1024
-        aws_ecs_app_image: qzschen/nginx-hello, qzschen/nginx-hello
-        aws_ecs_assign_public_ip: true
+  #       # Each comma separated value is for each consecutive container
+  #       aws_ecs_task_cpu: 1,1
+  #       aws_ecs_task_mem: 1024,1024
+  #       aws_ecs_app_image: qzschen/nginx-hello, qzschen/nginx-hello
+  #       aws_ecs_assign_public_ip: true
 
-        aws_ecs_container_port: 80,80
-        aws_ecs_lb_port: 8000, 8000
-        aws_ecs_lb_redirect_enable: true
-        aws_ecs_lb_container_path: 'nginx, nginx' # Fisrt container will be the URL root path
+  #       aws_ecs_container_port: 80,80
+  #       aws_ecs_lb_port: 8000, 8000
+  #       aws_ecs_lb_redirect_enable: true
+  #       aws_ecs_lb_container_path: 'nginx, nginx' # Fisrt container will be the URL root path
 
-        aws_alb_enable: true                   # Enable ALB
-        aws_alb_name: backend-alb               # ALB Name
-        aws_alb_scheme: internet-facing         # Expose ALB to the internet
-        aws_alb_port: 80                       # ALB listens on port 80 (HTTP)
-        aws_alb_protocol: HTTP                 # HTTP protocol for ALB
-        aws_alb_container_port: 80,80          # Ports exposed by containers for ALB to route to
-        aws_alb_target_group_name: backend-tg   # ALB Target Group Name
-        aws_alb_health_check_path: /health      # Health check path (optional, ensure Nginx supports this)
-        aws_alb_lb_redirect_enable: true        # Enable redirect for ALB
-        aws_alb_container_path: '/'     # Route requests to '/' and '/app' paths to containers
+  #       aws_alb_enable: true                   # Enable ALB
+  #       aws_alb_name: backend-alb               # ALB Name
+  #       aws_alb_scheme: internet-facing         # Expose ALB to the internet
+  #       aws_alb_port: 80                       # ALB listens on port 80 (HTTP)
+  #       aws_alb_protocol: HTTP                 # HTTP protocol for ALB
+  #       aws_alb_container_port: 80,80          # Ports exposed by containers for ALB to route to
+  #       aws_alb_target_group_name: backend-tg   # ALB Target Group Name
+  #       aws_alb_health_check_path: /health      # Health check path (optional, ensure Nginx supports this)
+  #       aws_alb_lb_redirect_enable: true        # Enable redirect for ALB
+  #       aws_alb_container_path: '/'     # Route requests to '/' and '/app' paths to containers
         
         
-        aws_vpc_name: ${{ env.VPC_ID }}
-        aws_vpc_public_subnets: ${{ env.PUBLIC_SUBNET_ID }}
-        aws_ecs_security_group_name: esc-sg # Security Group name for ECS/ALB
-        aws_ecs_lb_security_group_name: alb-sg  # ALB-specific security group
+  #       aws_vpc_name: ${{ needs.deploy-vpc.outputs.vpc_id }}
+  #       aws_vpc_public_subnets: ${{ needs.deploy-vpc.outputs.public_subnet_id }}
+  #       aws_ecs_security_group_name: esc-sg # Security Group name for ECS/ALB
+  #       aws_ecs_lb_security_group_name: alb-sg  # ALB-specific security group
         
-    - name: Print ALB URL
-      run: |
-          echo "${{ steps.ecs.outputs.ecs_dns_record }}"
+  #   - name: Print ALB URL
+  #     run: |
+  #         echo "${{ steps.ecs.outputs.ecs_dns_record }}"
