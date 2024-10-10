@@ -1,17 +1,17 @@
 name: Deploy ECS, RDS, ElasticCache
 on: 
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'project1/backend_redis/*'
-      - 'project1/backend_rds/*'
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'project1/backend_redis/*'
+  #     - 'project1/backend_rds/*'
 jobs:
   deploy-ecs:
     runs-on: ubuntu-latest
-    otputs: 
-    - ${{ steps.ecs.outputs.ecs_dns_record }}
+    outputs: 
+      ecs_dns_record: ${{ steps.ecs.outputs.ecs_dns_record }}
     steps:
     - name: Create VPC
       id: create_vpc
@@ -90,7 +90,7 @@ jobs:
         aws_alb_target_group_name: backend-tg   # ALB Target Group Name
         aws_alb_health_check_path: /health      # Health check path (optional, ensure Nginx supports this)
         aws_alb_lb_redirect_enable: true        # Enable redirect for ALB
-        aws_alb_container_path: '/', '/'     # Route requests to '/' and '/app' paths to containers
+        aws_alb_container_path: '/'     # Route requests to '/' and '/app' paths to containers
         
         
         aws_vpc_name: ${{ env.VPC_ID }}
