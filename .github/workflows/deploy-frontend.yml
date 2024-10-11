@@ -91,7 +91,7 @@ jobs:
                   "Items": [
                     {
                       "Id": "S3Origin",
-                      "DomainName": "'"${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.amazonaws.com"'",
+                      "DomainName": "${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.amazonaws.com",
                       "OriginAccessControlId": "$CLOUDFRONT_OAC_ID"
                     }
                   ],
