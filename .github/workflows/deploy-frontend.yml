@@ -90,17 +90,15 @@ jobs:
                 "Origins": {
                   "Items": [
                     {
-                      "Id": "S3OAC-production",
+                      "Id": "S3Origin",
                       "DomainName": "'"${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.amazonaws.com"'",
-                      "S3OriginConfig": {
-                        "OriginAccessControlId": "$CLOUDFRONT_OAC_ID"
-                      }
+                      "OriginAccessControlId": "'"$CLOUDFRONT_OAC_ID"'"
                     }
                   ],
                   "Quantity": 1
                 },
                 "DefaultCacheBehavior": {
-                  "TargetOriginId": "S3OAC-production",
+                  "TargetOriginId": "S3Origin",
                   "ViewerProtocolPolicy": "redirect-to-https",
                   "AllowedMethods": {
                     "Quantity": 2,
@@ -128,11 +126,11 @@ jobs:
                 "DefaultRootObject": "templates/index.html"
               }' \
               --query "Distribution.Id" --output text)
-
           fi
           echo "AWS_DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
           echo "$DISTRIBUTION_ID"
           echo "$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='project1-frontend-production.s3.amazonaws.com']].Id" --output text)"
+          
       # Step 3: Set S3 bucket policy to allow CloudFront access
       - name: Set S3 bucket policy to allow CloudFront access
         run: |
