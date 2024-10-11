@@ -191,33 +191,33 @@ jobs:
           echo "$DISTRIBUTION_ID"
           echo "$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='project1-frontend-production.s3.amazonaws.com']].Id" --output text)"
           echo "$CLOUDFRONT_OAC_ID"
-
+          echo"(aws cloudfront get-distribution-config --id E2HDCGYCPFSX9R)"
       # Step 3: Set S3 bucket policy to allow CloudFront access
       - name: Set S3 bucket policy to allow CloudFront access
         run: |
           aws s3api put-bucket-policy --bucket "${{ needs.create-sync-s3.outputs.aws_bucket_name }}" --policy "$(cat <<EOF
-            {
-                "Version": "2008-10-17",
-                "Id": "PolicyForCloudFrontPrivateContent",
-                "Statement": [
-                    {
-                        "Sid": "AllowCloudFrontServicePrincipal",
-                        "Effect": "Allow",
-                        "Principal": {
-                            "Service": "cloudfront.amazonaws.com"
-                        },
-                        "Action": "s3:GetObject",
-                        "Resource": "arn:aws:s3:::${{ needs.create-sync-s3.outputs.aws_bucket_name }}/*",
-                        "Condition": {
-                            "StringEquals": {
-                                "AWS:SourceArn": "arn:aws:cloudfront::194722414339:distribution/$AWS_DISTRIBUTION_ID"
-                            }
-                        }
-                    }
-                ]
-            }
-          EOF
-          )"
+                  {
+                      "Version": "2008-10-17",
+                      "Id": "PolicyForCloudFrontPrivateContent",
+                      "Statement": [
+                          {
+                              "Sid": "AllowCloudFrontServicePrincipal",
+                              "Effect": "Allow",
+                              "Principal": {
+                                  "Service": "cloudfront.amazonaws.com"
+                              },
+                              "Action": "s3:GetObject",
+                              "Resource": "arn:aws:s3:::${{ needs.create-sync-s3.outputs.aws_bucket_name }}/*",
+                              "Condition": {
+                                  "StringEquals": {
+                                      "AWS:SourceArn": "arn:aws:cloudfront::194722414339:distribution/$AWS_DISTRIBUTION_ID"
+                                  }
+                              }
+                          }
+                      ]
+                  }
+                  EOF
+                  )"
 
       # Step 4: Invalidate CloudFront Cache
       - name: Invalidate CloudFront cache
