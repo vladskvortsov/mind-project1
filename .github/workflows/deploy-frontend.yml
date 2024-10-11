@@ -76,7 +76,7 @@ jobs:
             --output text)
           fi
           echo "CLOUDFRONT_OAC_ID=$OAC_ID" >> $GITHUB_ENV
-          echo "$OAC_ID"
+          echo "$CLOUDFRONT_OAC_ID"
           
       # Step 2: Create CloudFront Distribution
       - name: Create CloudFront Distribution if not exists
@@ -91,7 +91,7 @@ jobs:
                   "Items": [
                     {
                       "Id": "S3Origin",
-                      "DomainName": "${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.amazonaws.com",
+                      "DomainName": "${{ needs.create-sync-s3.outputs.aws_bucket_name }}.${{ secrets.AWS_REGION }}.s3.amazonaws.com",
                       "OriginAccessControlId": "$CLOUDFRONT_OAC_ID"
                     }
                   ],
@@ -130,7 +130,7 @@ jobs:
           echo "AWS_DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
           echo "$DISTRIBUTION_ID"
           echo "$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='project1-frontend-production.s3.amazonaws.com']].Id" --output text)"
-
+          echo "$CLOUDFRONT_OAC_ID"
       # Step 3: Set S3 bucket policy to allow CloudFront access
       - name: Set S3 bucket policy to allow CloudFront access
         run: |
