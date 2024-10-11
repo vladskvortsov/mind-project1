@@ -59,15 +59,7 @@ jobs:
             --output text)
           
           if [ "$OAC_ID" == "None" ]; then
-            OAC_ID=""
-          fi
-
-          echo "OAC_ID=$OAC_ID" >> $GITHUB_ENV
-
-      - name: Create CloudFront Origin Access Control (OAC) if it doesn't exist
-        if: env.OAC_ID == ''
-        id: create_oac
-        run: |
+          
           OAC_CONFIG=$(cat <<EOF
           {
             "Name": "S3OAC-production",
@@ -82,8 +74,10 @@ jobs:
             --origin-access-control-config "$OAC_CONFIG" \
             --query "OriginAccessControl.Id" \
             --output text)
+          fi
           echo "CLOUDFRONT_OAC_ID=$OAC_ID" >> $GITHUB_ENV
           echo "$CLOUDFRONT_OAC_ID"
+          
       # Step 2: Create CloudFront Distribution
       - name: Create CloudFront Distribution if not exists
         id: create_cloudfront
