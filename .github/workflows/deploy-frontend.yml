@@ -191,7 +191,7 @@ jobs:
           echo "$DISTRIBUTION_ID"
           echo "$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='project1-frontend-production.s3.amazonaws.com']].Id" --output text)"
           echo "$CLOUDFRONT_OAC_ID"
-          echo"(aws cloudfront get-distribution-config --id E2HDCGYCPFSX9R)"
+          echo "(aws cloudfront get-distribution-config --id E2HDCGYCPFSX9R)"
       # Step 3: Set S3 bucket policy to allow CloudFront access
       - name: Set S3 bucket policy to allow CloudFront access
         run: |
