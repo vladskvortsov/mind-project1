@@ -50,30 +50,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 3: Set S3 bucket policy to allow CloudFront access
-      - name: Set S3 bucket policy to allow CloudFront access
-        run: |
-          aws s3api put-bucket-policy --bucket "${{ needs.create-sync-s3.outputs.aws_bucket_name }}" --policy "$(cat <<EOF
-          {
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Effect": "Allow",
-                "Principal": {
-                  "Service": "cloudfront.amazonaws.com"
-                },
-                "Action": "s3:GetObject",
-                "Resource": "arn:aws:s3:::${{ needs.create-sync-s3.outputs.aws_bucket_name }}/*",
-                "Condition": {
-                  "StringEquals": {
-                    "AWS:SourceArn": "arn:aws:cloudfront::$YOUR_AWS_ACCOUNT_ID:distribution/*"
-                  }
-                }
-              }
-            ]
-          }
-          EOF
-          )"
+
 
       # Step 1: Create CloudFront Origin Access Control
       - name: Check if CloudFront OAC exists
@@ -115,15 +92,15 @@ jobs:
                 "Origins": {
                   "Items": [
                     {
-                      "Id": "S3Origin",
-                      "DomainName": "${{ needs.create-sync-s3.outputs.aws_bucket_name }}.${{ secrets.AWS_REGION }}.s3.amazonaws.com",
+                      "Id": "${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com",
+                      "DomainName": "${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com",
                       "OriginAccessControlId": "$CLOUDFRONT_OAC_ID"
                     }
                   ],
                   "Quantity": 1
                 },
                 "DefaultCacheBehavior": {
-                  "TargetOriginId": "S3Origin",
+                  "TargetOriginId": "${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com",
                   "ViewerProtocolPolicy": "redirect-to-https",
                   "AllowedMethods": {
                     "Quantity": 2,
@@ -157,9 +134,34 @@ jobs:
           echo "$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='project1-frontend-production.s3.amazonaws.com']].Id" --output text)"
           echo "$CLOUDFRONT_OAC_ID"
 
+      # Step 3: Set S3 bucket policy to allow CloudFront access
+      - name: Set S3 bucket policy to allow CloudFront access
+        run: |
+          aws s3api put-bucket-policy --bucket "${{ needs.create-sync-s3.outputs.aws_bucket_name }}" --policy "$(cat <<EOF
+            {
+                "Version": "2008-10-17",
+                "Id": "PolicyForCloudFrontPrivateContent",
+                "Statement": [
+                    {
+                        "Sid": "AllowCloudFrontServicePrincipal",
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Service": "cloudfront.amazonaws.com"
+                        },
+                        "Action": "s3:GetObject",
+                        "Resource": "arn:aws:s3:::${{ needs.create-sync-s3.outputs.aws_bucket_name }}/*",
+                        "Condition": {
+                            "StringEquals": {
+                                "AWS:SourceArn": "arn:aws:cloudfront::194722414339:distribution/$AWS_DISTRIBUTION_ID"
+                            }
+                        }
+                    }
+                ]
+            }
+          EOF
+          )"
 
       # Step 4: Invalidate CloudFront Cache
       - name: Invalidate CloudFront cache
         run: |
           aws cloudfront create-invalidation --distribution-id $AWS_DISTRIBUTION_ID --paths "/*"
-
