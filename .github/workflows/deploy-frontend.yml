@@ -77,7 +77,7 @@ jobs:
           fi
           echo "CLOUDFRONT_OAC_ID=$OAC_ID" >> $GITHUB_ENV
           echo "$CLOUDFRONT_OAC_ID"
-          
+
       # Step 2: Create CloudFront Distribution
       - name: Create CloudFront Distribution if not exists
         id: create_cloudfront
@@ -93,7 +93,7 @@ jobs:
                       "Id": "S3OAC-production",
                       "DomainName": "'"${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.amazonaws.com"'",
                       "S3OriginConfig": {
-                        "OriginAccessIdentity": "$CLOUDFRONT_OAC_ID"
+                        "OriginAccessIdentity": "S3OAC-production"
                       }
                     }
                   ],
