@@ -40,6 +40,9 @@ jobs:
   create-cloudfront:
     runs-on: ubuntu-latest
     needs: create-sync-s3
+    outputs:
+        cloudfront_oac_id: ${{ steps.check_oac.outputs.cloudfront_oac_id }}
+        aws_distribution_id: ${{ steps.create_cloudfront.outputs.aws_distribution_id }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -77,8 +80,8 @@ jobs:
             --query "OriginAccessControl.Id" \
             --output text)
           fi
-          echo "CLOUDFRONT_OAC_ID=$OAC_ID" >> $GITHUB_ENV
-          echo "$CLOUDFRONT_OAC_ID"          
+          echo "cloudfront_oac_id=$OAC_ID" >> $GITHUB_OUTPUT
+
       # Step 2: Create CloudFront Distribution
       - name: Create CloudFront Distribution if not exists
         id: create_cloudfront
@@ -110,7 +113,7 @@ jobs:
                                     "OriginShield": {
                                         "Enabled": false
                                     },
-                                    "OriginAccessControlId": "${{ env.CLOUDFRONT_OAC_ID }}"
+                                    "OriginAccessControlId": "${{ steps.check_oac.outputs.cloudfront_oac_id }}"
                                 }
                             ]
                         },
@@ -193,8 +196,7 @@ jobs:
                     --query "Distribution.Id" --output text)
                       fi
                       echo "aws_distribution_id=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
-                      echo "$DISTRIBUTION_ID"
-                      echo "$CLOUDFRONT_OAC_ID"
+
         # echo "$(aws cloudfront get-distribution-config --id E2HDCGYCPFSX9R)"
       # Step 3: Set S3 bucket policy to allow CloudFront access
       - name: Set S3 bucket policy to allow CloudFront access
