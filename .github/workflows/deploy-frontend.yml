@@ -192,7 +192,7 @@ jobs:
                     }' \
                     --query "Distribution.Id" --output text)
                       fi
-                      echo "AWS_DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
+                      echo "aws_distribution_id=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
                       echo "$DISTRIBUTION_ID"
                       echo "$CLOUDFRONT_OAC_ID"
         # echo "$(aws cloudfront get-distribution-config --id E2HDCGYCPFSX9R)"
@@ -213,7 +213,7 @@ jobs:
                               "Resource": "arn:aws:s3:::${{ needs.create-sync-s3.outputs.aws_bucket_name }}/*",
                               "Condition": {
                                   "StringEquals": {
-                                      "AWS:SourceArn": "arn:aws:cloudfront::194722414339:distribution/${{ env.AWS_DISTRIBUTION_ID }}"
+                                      "AWS:SourceArn": "arn:aws:cloudfront::194722414339:distribution/${{ steps.create_cloudfront.outputs.aws_distribution_id }}"
                                   }
                               }
                           }
@@ -223,5 +223,5 @@ jobs:
       # Step 4: Invalidate CloudFront Cache
       - name: Invalidate CloudFront cache
         run: |
-          aws cloudfront create-invalidation --distribution-id ${{ env.AWS_DISTRIBUTION_ID }} --paths "/*"
+          aws cloudfront create-invalidation --distribution-id ${{ steps.create_cloudfront.outputs.aws_distribution_id }} --paths "/*"
 
