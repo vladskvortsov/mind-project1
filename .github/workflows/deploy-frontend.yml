@@ -87,7 +87,8 @@ jobs:
           DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.amazonaws.com']].Id" --output text)
           if [ "$DISTRIBUTION_ID" == "None" ]; then
             DISTRIBUTION_ID=$(aws cloudfront create-distribution \
-              --distribution-config '{
+              --distribution-config "$(cat <<EOF
+                             {
                             "CallerReference": "$(date +%s)",
                             "DefaultRootObject": "templates/index.html",
                             "Origins": {
@@ -181,8 +182,10 @@ jobs:
                             "IsIPV6Enabled": true,
                             "ContinuousDeploymentPolicyId": "",
                             "Staging": false
-                             }' \
-                              --query "Distribution.Id" --output text)
+                             }
+                      EOF
+                      )" \
+                      --query "Distribution.Id" --output text)
           fi
           echo "AWS_DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
           echo "$DISTRIBUTION_ID"
