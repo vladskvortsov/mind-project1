@@ -105,7 +105,8 @@ jobs:
                                     },
                                     "S3OriginConfig": {
                                         "OriginAccessIdentity": ""
-                                    }
+                                    },
+                                    "OriginAccessControlId": "$CLOUDFRONT_OAC_ID"
                                 }
                             ]
                         },
