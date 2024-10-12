@@ -110,7 +110,7 @@ jobs:
                                     "OriginShield": {
                                         "Enabled": false
                                     },
-                                    "OriginAccessControlId": "E1T7AU3ZSMQ392"
+                                    "OriginAccessControlId": "${{ env.CLOUDFRONT_OAC_ID }}"
                                 }
                             ]
                         },
@@ -213,7 +213,7 @@ jobs:
                               "Resource": "arn:aws:s3:::${{ needs.create-sync-s3.outputs.aws_bucket_name }}/*",
                               "Condition": {
                                   "StringEquals": {
-                                      "AWS:SourceArn": "arn:aws:cloudfront::194722414339:distribution/$AWS_DISTRIBUTION_ID"
+                                      "AWS:SourceArn": "arn:aws:cloudfront::194722414339:distribution/${{ env.AWS_DISTRIBUTION_ID }}"
                                   }
                               }
                           }
@@ -223,4 +223,5 @@ jobs:
       # Step 4: Invalidate CloudFront Cache
       - name: Invalidate CloudFront cache
         run: |
-          aws cloudfront create-invalidation --distribution-id $AWS_DISTRIBUTION_ID --paths "/*"
+          aws cloudfront create-invalidation --distribution-id ${{ env.AWS_DISTRIBUTION_ID }} --paths "/*"
+
