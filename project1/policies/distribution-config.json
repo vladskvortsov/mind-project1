@@ -8,15 +8,16 @@
         "Quantity": 1,
         "Items": [
             {
-                "Id": "project1-frontend-production.s3.${{ secrets.AWS_REGION }}.amazonaws.com",
-                "DomainName": "project1-frontend-production.s3.${{ secrets.AWS_REGION }}.amazonaws.com",
+                "Id": "${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com",
+                "DomainName": "${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com",
                 "OriginPath": "",
                 "CustomHeaders": {
                     "Quantity": 0
                 },
                 "S3OriginConfig": {
                     "OriginAccessIdentity": ""
-                }
+                },
+                "OriginAccessControlId": "$CLOUDFRONT_OAC_ID"
             }
         ]
     },
@@ -24,7 +25,7 @@
         "Quantity": 0
     },
     "DefaultCacheBehavior": {
-        "TargetOriginId": "project1-frontend-production.s3.${{ secrets.AWS_REGION }}.amazonaws.com",
+        "TargetOriginId": "${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com",
         "ForwardedValues": {
             "QueryString": false,
             "Cookies": {
