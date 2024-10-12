@@ -224,24 +224,3 @@ jobs:
       - name: Invalidate CloudFront cache
         run: |
           aws cloudfront create-invalidation --distribution-id $AWS_DISTRIBUTION_ID --paths "/*"
-
-{
-        "Version": "2008-10-17",
-        "Id": "PolicyForCloudFrontPrivateContent",
-        "Statement": [
-            {
-                "Sid": "AllowCloudFrontServicePrincipal",
-                "Effect": "Allow",
-                "Principal": {
-                    "Service": "cloudfront.amazonaws.com"
-                },
-                "Action": "s3:GetObject",
-                "Resource": "arn:aws:s3:::project1-frontend-production/*",
-                "Condition": {
-                    "StringEquals": {
-                      "AWS:SourceArn": "arn:aws:cloudfront::194722414339:distribution/E1ISKJ9UAACLQK"
-                    }
-                }
-            }
-        ]
-      }
