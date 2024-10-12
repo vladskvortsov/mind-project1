@@ -112,7 +112,7 @@ jobs:
                                     "OriginShield": {
                                         "Enabled": false
                                     },
-                                    "OriginAccessControlId": "$CLOUDFRONT_OAC_ID"
+                                    "OriginAccessControlId": "E1T7AU3ZSMQ392"
                                 }
                             ]
                         },
