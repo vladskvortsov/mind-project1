@@ -79,6 +79,7 @@ jobs:
           fi
           echo "CLOUDFRONT_OAC_ID=$OAC_ID" >> $GITHUB_ENV
           echo "$CLOUDFRONT_OAC_ID"
+          echo "$CLOUDFRONT_OAC_ID"
           
       # Step 2: Create CloudFront Distribution
       - name: Create CloudFront Distribution if not exists
