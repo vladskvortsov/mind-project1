@@ -200,7 +200,7 @@ jobs:
       - name: Set S3 bucket policy to allow CloudFront access
         run: |
           aws s3api put-bucket-policy --bucket "${{ needs.create-sync-s3.outputs.aws_bucket_name }}" --policy '{
-                      "Version": "project1",
+                      "Version": "2008-10-17",
                       "Id": "PolicyForCloudFrontPrivateContent",
                       "Statement": [
                           {
@@ -225,3 +225,23 @@ jobs:
         run: |
           aws cloudfront create-invalidation --distribution-id $AWS_DISTRIBUTION_ID --paths "/*"
 
+{
+        "Version": "2008-10-17",
+        "Id": "PolicyForCloudFrontPrivateContent",
+        "Statement": [
+            {
+                "Sid": "AllowCloudFrontServicePrincipal",
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": "cloudfront.amazonaws.com"
+                },
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::project1-frontend-production/*",
+                "Condition": {
+                    "StringEquals": {
+                      "AWS:SourceArn": "arn:aws:cloudfront::194722414339:distribution/E1ISKJ9UAACLQK"
+                    }
+                }
+            }
+        ]
+      }
