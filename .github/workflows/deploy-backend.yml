@@ -156,3 +156,4 @@ jobs:
 
         aws_vpc_id: ${{ needs.deploy-vpc.outputs.vpc_id }}
         aws_vpc_subnet_id	: ${{ needs.deploy-vpc.outputs.public_subnet_id }}
+        aws_vpc_availability_zones: a, b
