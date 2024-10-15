@@ -1,0 +1,60 @@
+version: '3'
+
+services:
+  frontend:
+    image: nginx:latest
+    volumes:
+      - ./frontend/templates:/usr/share/nginx/html
+      - ./frontend/config.json:/usr/share/nginx/html/config.json
+
+    ports:
+      - "8000:80"
+
+
+  backend_rds:
+    build: ./backend_rds
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend_rds:/app
+    ports:
+      - "8002:8000"
+    environment:
+      RDS_DB_NAME: "mydatabase"
+      RDS_USERNAME: "myuser"
+      RDS_PASSWORD: "mypassword"
+      RDS_HOSTNAME: "db"
+      RDS_PORT: 5432
+    depends_on:
+      - db
+
+  backend_redis:
+    build: ./backend_redis
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend_redis:/app
+    ports:
+      - "8003:8000"
+    environment:
+      REDIS_HOST: "redis"
+      REDIS_PORT: 6379
+      REDIS_DB: "mydatabase"
+      REDIS_PASSWORD: "mypassword"
+    depends_on:
+      - redis
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: "mydatabase"
+      POSTGRES_USER: "myuser"
+      POSTGRES_PASSWORD: "mypassword"
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    environment:
+      REDIS_DB: "mydatabase"
+      REDIS_PASSWORD: "mypassword"
