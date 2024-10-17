@@ -4,46 +4,17 @@ services:
   frontend:
     image: nginx:latest
     volumes:
-      - ./frontend/templates:/usr/share/nginx/html
-      - ./frontend/config.json:/usr/share/nginx/html/config.json
-
+      - ./frontend:/usr/share/nginx/html
+      # - ./frontend/config.json:/usr/share/nginx/html/config.json
     ports:
-      - "8000:80"
-
-
-  backend_rds:
-    build: ./backend_rds
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - ./backend_rds:/app
-    ports:
-      - "8002:8000"
+      - "8080:80"
     environment:
-      RDS_DB_NAME: "mydatabase"
-      RDS_USERNAME: "myuser"
-      RDS_PASSWORD: "mypassword"
-      RDS_HOSTNAME: "db"
-      RDS_PORT: 5432
-    depends_on:
-      - db
-
-  backend_redis:
-    build: ./backend_redis
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - ./backend_redis:/app
-    ports:
-      - "8003:8000"
-    environment:
-      REDIS_HOST: "redis"
-      REDIS_PORT: 6379
-      REDIS_DB: "mydatabase"
-      REDIS_PASSWORD: "mypassword"
-    depends_on:
-      - redis
+      BACKEND_RDS_URL: "localhost:8000/test_connection/"
+      BACKEND_REDIS_URL: "localhost:8003/test_connection/"
 
   db:
-    image: postgres:13
+    image: postgres:15
+    container_name: db
     environment:
       POSTGRES_DB: "mydatabase"
       POSTGRES_USER: "myuser"
@@ -53,8 +24,43 @@ services:
 
   redis:
     image: redis:alpine
+    container_name: redis
     ports:
       - "6379:6379"
+    command: ["redis-server", "--requirepass", "mypassword"]
     environment:
-      REDIS_DB: "mydatabase"
+      REDIS_DB: "0"  # Redis doesn't use environment variables for DB; use commands in code to switch DB.
+
+  backend_rds:
+    build: ./backend_rds
+    container_name: backend_rds
+    # command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend_rds:/app
+    ports:
+      - "8000:8000"
+    environment:
+      DB_NAME: "mydatabase"
+      DB_USERNAME: "myuser"
+      DB_PASSWORD: "mypassword"
+      DB_HOSTNAME: "db"
+      DB_PORT: 5432
+    depends_on:
+      - db
+
+  backend_redis:
+    build: ./backend_redis
+    container_name: backend_redis
+    # command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend_redis:/app
+    ports:
+      - "8003:8000"
+    environment:
+      REDIS_HOST: "redis"
+      REDIS_PORT: 6379
+      REDIS_DB: "0"
       REDIS_PASSWORD: "mypassword"
+    depends_on:
+      - redis
+
