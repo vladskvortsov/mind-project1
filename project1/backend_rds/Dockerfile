@@ -4,7 +4,13 @@ FROM python:3.11
 # Set environment variables to prevent Python from buffering stdout/stderr and writing .pyc files
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV CORS_ALLOWED_ORIGINS=http://frontend:80
 
+ENV DB_NAME: "mydatabase"
+ENV DB_USER: "myuser"
+ENV DB_PASSWORD: "mypassword"
+ENV DB_HOST: "db"
+ENV DB_PORT: 5432
 # Set the working directory in the container to /app
 WORKDIR /app
 
@@ -21,10 +27,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the entire project code to the working directory
 COPY . .
 
-# Set environment variables for Django settings module
-# ENV DJANGO_SETTINGS_MODULE=backend_rds.settings
-# ENV CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:8080
-# Expose port 8000 (for Django development server)
 EXPOSE 8000
 
 # Set default command to run Django development server

@@ -9,46 +9,51 @@ on:
   #     - 'project1/backend_rds/*'
 jobs:
   deploy-rds-backend-to-ecr:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout 
-        uses: actions/checkout@v3
-      - name: do something to the code
-        run: echo "Changed code" > text.txt
-      - id: ecr-publish
-        name: Build image
-        uses: bitovi/github-actions-ecr-publish@v0.1.0
-        with:
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_default_region: ${{ secrets.AWS_REGION }}
-          aws_ecr_repo_name: project1-backend
-          image_tag: backend-rds
-          working_directory: ./project1/backend_rds/
-      - run: |
-          echo "Image Created:  ${{ env.image }}"
-          echo "Tag Created: ${{ env.tag }}"
+   runs-on: ubuntu-latest
+   steps:
+     - name: Checkout 
+       uses: actions/checkout@v3
+     - name: do something to the code
+       run: echo "Changed code" > text.txt
+     - id: ecr-publish
+       name: Build image
+       uses: bitovi/github-actions-ecr-publish@v0.1.0
+       with:
+         aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+         aws_default_region: ${{ secrets.AWS_REGION }}
+         aws_ecr_repo_name: project1-backend
+         image_tag: backend-rds
+         working_directory: ./project1/backend_rds/
+     - run: |
+         echo "Image Created:  ${{ env.image }}"
+         echo "Tag Created: ${{ env.tag }}"
 
-  deploy-redis-backend-to-ecr:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout 
-        uses: actions/checkout@v3
-      - name: do something to the code
-        run: echo "Changed code" > text.txt
-      - id: ecr-publish
-        name: Build image
-        uses: bitovi/github-actions-ecr-publish@v0.1.0
-        with:
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_default_region: ${{ secrets.AWS_REGION }}
-          aws_ecr_repo_name: project1-backend
-          image_tag: backend-redis
-          working_directory: ./project1/backend_redis/
-      - run: |
-          echo "Image Created:  ${{ env.image }}"
-          echo "Tag Created: ${{ env.tag }}"
+  # deploy-redis-backend-to-ecr:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout 
+  #       uses: actions/checkout@v3
+  #     - name: do something to the code
+  #       run: echo "Changed code" > text.txt
+  #     - id: ecr-publish
+  #       name: Build image
+  #       uses: bitovi/github-actions-ecr-publish@v0.1.0
+  #       with:
+  #         aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws_default_region: ${{ secrets.AWS_REGION }}
+  #         aws_ecr_repo_name: project1-backend
+  #         image_tag: backend-redis
+  #         working_directory: ./project1/backend_redis/
+  #     - run: |
+  #         echo "Image Created:  ${{ env.image }}"
+  #         echo "Tag Created: ${{ env.tag }}"
+
+
+
+
+
 
 
   # deploy-vpc:
@@ -115,6 +120,38 @@ jobs:
 
 
 
+
+
+  deploy-ecs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create cluster
+        uses: bitovi/github-actions-deploy-ecs@v0.1.4
+        id: ecs
+        with:
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_default_region: ${{ secrets.AWS_REGION }}
+
+          #tf_stack_destroy: true # This is to destroy the stack
+          tf_state_bucket_destroy: true # Will only destroy the bucket if tf_stack_destroy is true
+          aws_ecs_cluster_name: backend-cluster
+          aws_ecs_service_name: backend-rds
+          aws_ecs_task_name: backend_rds
+          aws_ecs_node_count: 1
+          aws_ecs_autoscaling_enable: true
+          aws_ecs_autoscaling_max_nodes: 1
+          aws_ecs_autoscaling_min_nodes: 1
+          aws_ecs_service_launch_type: FARGATE
+          aws_ecs_task_cpu: 1
+          aws_ecs_task_mem: 1024
+          aws_ecs_app_image: private.ecr.aws/project1-backend:backend-redis
+          aws_ecs_assign_public_ip: true
+          aws_ecs_lb_redirect_enable: true
+          aws_ecs_lb_container_path: 'app' # Fisrt container will be the URL root path
+          # aws_ecs_task_json_definition_file:
+          aws_ecs_container_port: 8000
+          aws_ecs_lb_port: 9000
 
 
 

@@ -13,12 +13,12 @@ services:
     #   BACKEND_REDIS_URL: "localhost:8003/test_connection/"
 
   db:
-    image: postgres:15
+    image: postgres:14-alpine
     container_name: db
     environment:
-      POSTGRES_DB: "mydatabase"
-      POSTGRES_USER: "myuser"
-      POSTGRES_PASSWORD: "mypassword"
+      - POSTGRES_DB=mydatabase
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=mypassword
     ports:
       - "5432:5432"
 
@@ -39,12 +39,6 @@ services:
       - ./backend_rds:/app
     ports:
       - "8000:8000"
-    environment:
-      DB_NAME: "mydatabase"
-      DB_USERNAME: "myuser"
-      DB_PASSWORD: "mypassword"
-      DB_HOSTNAME: "db"
-      DB_PORT: 5432
     depends_on:
       - db
 
