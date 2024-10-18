@@ -153,7 +153,7 @@ jobs:
           # aws_ecs_task_json_definition_file:
           aws_ecs_container_port: 8000
           aws_ecs_lb_port: 9000
-          aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}+a
+          aws_vpc_availability_zones: a,b
 
 
 
