@@ -136,6 +136,7 @@ jobs:
 
           #tf_stack_destroy: true # This is to destroy the stack
           tf_state_bucket_destroy: true # Will only destroy the bucket if tf_stack_destroy is true
+          aws_ecs_enable: true
           aws_ecs_cluster_name: backend-cluster
           aws_ecs_service_name: backend-rds
           aws_ecs_task_name: backend_rds
