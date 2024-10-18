@@ -22,8 +22,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Set environment variables for Django settings module
-ENV DJANGO_SETTINGS_MODULE=backend_rds.settings
-ENV CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:8080
+# ENV DJANGO_SETTINGS_MODULE=backend_rds.settings
+# ENV CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:8080
 # Expose port 8000 (for Django development server)
 EXPOSE 8000
 
