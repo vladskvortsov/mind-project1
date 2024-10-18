@@ -124,7 +124,7 @@ jobs:
 
   deploy-ecs:
     runs-on: ubuntu-latest
-    needs: deploy-rds-backend-to-ecr
+    # needs: deploy-rds-backend-to-ecr
     steps:
       - name: Create cluster
         uses: bitovi/github-actions-deploy-ecs@v0.1.4
