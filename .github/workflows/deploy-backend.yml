@@ -8,26 +8,26 @@ on:
   #     - 'project1/backend_redis/*'
   #     - 'project1/backend_rds/*'
 jobs:
-  deploy-rds-backend-to-ecr:
-   runs-on: ubuntu-latest
-   steps:
-     - name: Checkout 
-       uses: actions/checkout@v3
-     - name: do something to the code
-       run: echo "Changed code" > text.txt
-     - id: ecr-publish
-       name: Build image
-       uses: bitovi/github-actions-ecr-publish@v0.1.0
-       with:
-         aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-         aws_default_region: ${{ secrets.AWS_REGION }}
-         aws_ecr_repo_name: project1-backend
-         image_tag: backend-rds
-         working_directory: ./project1/backend_rds/
-     - run: |
-         echo "Image Created:  ${{ env.image }}"
-         echo "Tag Created: ${{ env.tag }}"
+  # deploy-rds-backend-to-ecr:
+  #  runs-on: ubuntu-latest
+  #  steps:
+  #    - name: Checkout 
+  #      uses: actions/checkout@v3
+  #    - name: do something to the code
+  #      run: echo "Changed code" > text.txt
+  #    - id: ecr-publish
+  #      name: Build image
+  #      uses: bitovi/github-actions-ecr-publish@v0.1.0
+  #      with:
+  #        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #        aws_default_region: ${{ secrets.AWS_REGION }}
+  #        aws_ecr_repo_name: project1-backend
+  #        image_tag: backend-rds
+  #        working_directory: ./project1/backend_rds/
+  #    - run: |
+  #        echo "Image Created:  ${{ env.image }}"
+  #        echo "Tag Created: ${{ env.tag }}"
 
   # deploy-redis-backend-to-ecr:
   #   runs-on: ubuntu-latest
