@@ -8,47 +8,47 @@ on:
   #     - 'project1/backend_redis/*'
   #     - 'project1/backend_rds/*'
 jobs:
-  # deploy-rds-backend-to-ecr:
-  #  runs-on: ubuntu-latest
-  #  steps:
-  #    - name: Checkout 
-  #      uses: actions/checkout@v3
-  #    - name: do something to the code
-  #      run: echo "Changed code" > text.txt
-  #    - id: ecr-publish
-  #      name: Build image
-  #      uses: bitovi/github-actions-ecr-publish@v0.1.0
-  #      with:
-  #        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #        aws_default_region: ${{ secrets.AWS_REGION }}
-  #        aws_ecr_repo_name: project1-backend
-  #        image_tag: backend-rds
-  #        working_directory: ./project1/backend_rds/
-  #    - run: |
-  #        echo "Image Created:  ${{ env.image }}"
-  #        echo "Tag Created: ${{ env.tag }}"
+  deploy-rds-backend-to-ecr:
+   runs-on: ubuntu-latest
+   steps:
+     - name: Checkout 
+       uses: actions/checkout@v3
+     - name: do something to the code
+       run: echo "Changed code" > text.txt
+     - id: ecr-publish
+       name: Build image
+       uses: bitovi/github-actions-ecr-publish@v0.1.0
+       with:
+         aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+         aws_default_region: ${{ secrets.AWS_REGION }}
+         aws_ecr_repo_name: project1-backend
+         image_tag: backend-rds
+         working_directory: ./project1/backend_rds/
+     - run: |
+         echo "Image Created:  ${{ env.image }}"
+         echo "Tag Created: ${{ env.tag }}"
 
-  # deploy-redis-backend-to-ecr:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout 
-  #       uses: actions/checkout@v3
-  #     - name: do something to the code
-  #       run: echo "Changed code" > text.txt
-  #     - id: ecr-publish
-  #       name: Build image
-  #       uses: bitovi/github-actions-ecr-publish@v0.1.0
-  #       with:
-  #         aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws_default_region: ${{ secrets.AWS_REGION }}
-  #         aws_ecr_repo_name: project1-backend
-  #         image_tag: backend-redis
-  #         working_directory: ./project1/backend_redis/
-  #     - run: |
-  #         echo "Image Created:  ${{ env.image }}"
-  #         echo "Tag Created: ${{ env.tag }}"
+  deploy-redis-backend-to-ecr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 
+        uses: actions/checkout@v3
+      - name: do something to the code
+        run: echo "Changed code" > text.txt
+      - id: ecr-publish
+        name: Build image
+        uses: bitovi/github-actions-ecr-publish@v0.1.0
+        with:
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_default_region: ${{ secrets.AWS_REGION }}
+          aws_ecr_repo_name: project1-backend
+          image_tag: backend-redis
+          working_directory: ./project1/backend_redis/
+      - run: |
+          echo "Image Created:  ${{ env.image }}"
+          echo "Tag Created: ${{ env.tag }}"
 
 
 
@@ -117,33 +117,49 @@ jobs:
   #         echo "${{ steps.create_subnets.outputs.private_subnet_id }}"
 
 
-  deploy-ecs:
-    runs-on: ubuntu-latest
-  # needs: deploy-rds-backend-to-ecr
-    steps:
-    - name: Create ECS Cluster
-      run: |
-        aws ecs create-cluster --cluster-name backend-cluster
+  # deploy-ecs:
+  #   runs-on: ubuntu-latest
+  # # needs: deploy-rds-backend-to-ecr
+  #   steps:
+  #   - name: Create ECS Cluster
+  #     run: |
+  #       aws ecs create-cluster --cluster-name backend-cluster
 
-    # Step 5: Register ECS task definition
-    - name: Render ECS Task Definition
-      id: task-def
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
-      with:
-        task-definition: ./project1/backend_rds/ecs-task-definition.json  # Path to your ECS task definition JSON file
-        container-name: backend-rds
-        image: backend-rds/project1-backend:latest
+  #   # Step 5: Register ECS task definition
+  #   - name: Render ECS Task Definition
+  #     id: task-def
+  #     uses: aws-actions/amazon-ecs-render-task-definition@v1
+  #     with:
+  #       task-definition: ./project1/backend_rds/ecs-task-definition.json  # Path to your ECS task definition JSON file
+  #       container-name: backend-rds
+  #       image: backend-rds/project1-backend:latest
 
-    # Step 6: Deploy to ECS service
+  #   # Step 6: Deploy to ECS service
 
-    - name: Deploy Amazon ECS task definition
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-      with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: rds-backend
-        cluster: backend-cluster
-        wait-for-service-stability: true
-        
+  #   - name: Deploy Amazon ECS task definition
+  #     uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+  #     with:
+  #       task-definition: ${{ steps.task-def.outputs.task-definition }}
+  #       service: rds-backend
+  #       cluster: backend-cluster
+  #       wait-for-service-stability: true
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   # deploy-ecs:
   #   runs-on: ubuntu-latest
