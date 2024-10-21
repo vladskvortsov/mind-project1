@@ -4,7 +4,7 @@ FROM python:3.11
 # Set environment variables to prevent Python from buffering stdout/stderr and writing .pyc files
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV CORS_ALLOWED_ORIGINS=0.0.0.0
+ENV CORS_ALLOWED_ORIGINS=https://d2xytvnh88jebv.cloudfront.net/
 
 ENV DB_NAME: "mydatabase"
 ENV DB_USER: "myuser"

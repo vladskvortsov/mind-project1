@@ -132,7 +132,7 @@ jobs:
   #     with:
   #       task-definition: ./project1/backend_rds/ecs-task-definition.json  # Path to your ECS task definition JSON file
   #       container-name: backend-rds
-  #       image: backend-rds/project1-backend:latest
+  #       image: 194722414339.dkr.ecr.eu-north-1.amazonaws.com/project1-backend:backend-rds
 
   #   # Step 6: Deploy to ECS service
 
