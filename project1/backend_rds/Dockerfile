@@ -4,13 +4,13 @@ FROM python:3.11
 # Set environment variables to prevent Python from buffering stdout/stderr and writing .pyc files
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV CORS_ALLOWED_ORIGINS=https://d2xytvnh88jebv.cloudfront.net
+
 
 ENV DB_NAME: "mydatabase"
 ENV DB_USER: "myuser"
 ENV DB_PASSWORD: "mypassword"
 ENV DB_HOST: "db"
-ENV DB_PORT: 5432
+ENV DB_PORT: "5432"
 # Set the working directory in the container to /app
 WORKDIR /app
 
@@ -26,6 +26,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the entire project code to the working directory
 COPY . .
+
+
+# # Run database migrations
+# RUN python manage.py migrate
 
 EXPOSE 8000
 
