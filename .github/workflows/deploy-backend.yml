@@ -107,17 +107,17 @@ jobs:
         aws_ec2_port_list: 8000,8003,8080
         docker_repo_app_directory: ./project1/
           
-        # aws_rds_db_enable: true
-        # aws_rds_db_name: mydb
-        # aws_rds_db_user: dbuser
-        # aws_rds_db_engine: postgres
-        # aws_rds_db_security_group_name:
-        # aws_rds_db_port: 5432
-        # aws_rds_db_allocated_storage: 10
-        # aws_rds_db_instance_class: db.t3.micro
-        # aws_rds_db_final_snapshot:
-        # aws_rds_db_multi_az: false
-        # aws_rds_db_apply_immediately: true
+        aws_rds_db_enable: true
+        aws_rds_db_name: mydb
+        aws_rds_db_user: dbuser
+        aws_rds_db_engine: postgres
+        aws_rds_db_security_group_name:
+        aws_rds_db_port: 5432
+        aws_rds_db_allocated_storage: 10
+        aws_rds_db_instance_class: db.t3.micro
+        aws_rds_db_final_snapshot:
+        aws_rds_db_multi_az: false
+        aws_rds_db_apply_immediately: true
 
     - name: Show results
       id: show
