@@ -76,6 +76,7 @@ jobs:
       ec2_sg_id: ${{ steps.deploy.outputs.ec2_sg_id }}
       db_sg_id: ${{ steps.deploy.outputs.db_sg_id }}
       db_secret_details_name: ${{ steps.deploy.outputs.db_secret_details_name }}
+      instance_endpoint: ${{ steps.deploy.outputs.instance_endpoint }}
     steps:
     - id: deploy
       name: Deploy
@@ -105,7 +106,7 @@ jobs:
         aws_ec2_instance_type: t3.micro
         aws_ec2_instance_root_vol_size: 8
         aws_ec2_port_list: 8000,8003,8080
-        docker_repo_app_directory: ./project1/docker-compose.yml
+        docker_repo_app_directory: ./project1/
           
         aws_rds_db_enable: true
         aws_rds_db_name: mydb
@@ -126,6 +127,27 @@ jobs:
           echo "${{ steps.deploy.outputs.ec2_sg_id }}"
           echo "${{ steps.deploy.outputs.db_sg_id }}"
           echo "${{ steps.deploy.outputs.db_secret_details_name }}"
+          echo "${{ steps.deploy.outputs.instance_endpoint }}"
+
+  deploy-backend-images:
+    runs-on: ubuntu-latest
+    steps:
+    # - name: Log in to Amazon ECR
+    #   uses: aws-actions/amazon-ecr-login@v1
+    #   with:
+    #     registry: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+    - name: Deploy on EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
+          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
+          docker-compose up -d
 
 
 
