@@ -93,7 +93,7 @@ jobs:
 
         aws_vpc_create: true
         aws_vpc_name: project1-vpc
-        aws_vpc_cidr_block: 10.0.0.0/16
+        # aws_vpc_cidr_block: 10.0.0.0/16
         aws_vpc_public_subnets: 10.10.10.0/24
         aws_vpc_private_subnets: 10.10.20.0/24
         # aws_vpc_availability_zones: a,b
