@@ -131,6 +131,7 @@ jobs:
 
   deploy-backend-images:
     runs-on: ubuntu-latest
+    needs: deploy-ec2
     steps:
     # - name: Log in to Amazon ECR
     #   uses: aws-actions/amazon-ecr-login@v1
@@ -140,9 +141,9 @@ jobs:
     - name: Deploy on EC2
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.EC2_HOST }}
+        host: ${{ needs.deploy-ec2.outputs.instance_endpoint }}
         username: ubuntu
-        key: ${{ secrets.EC2_SSH_KEY }}
+        key: vladskvortsov-mind-master-ec2kp-nPMRp
         script: |
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
           docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
