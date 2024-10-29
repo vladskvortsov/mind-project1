@@ -46,14 +46,20 @@ jobs:
         aws_ec2_instance_root_vol_size: 8
         aws_ec2_port_list: 8000,8003,8080
         aws_ec2_iam_instance_profile: 
+        aws_ec2_create_keypair_sm: project1-key
         docker_repo_app_directory: ./project1/
-          
+        aws_ec2_user_data_file: ./project1/user_data.sh<<EOF
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
+          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
+          docker compose up -d
+          EOF
 
         aws_rds_db_enable: true
         aws_rds_db_name: mydb
         aws_rds_db_user: dbuser
+        aws_rds_db_password: mypassword
         aws_rds_db_engine: postgres
-        # aws_rds_db_security_group_name:
         aws_rds_db_port: 5432
         aws_rds_db_allocated_storage: 20
         aws_rds_db_instance_class: db.t3.micro
@@ -67,19 +73,10 @@ jobs:
       run: |
           echo "${{ steps.deploy.outputs.aws_vpc_id }}"
           echo "${{ steps.deploy.outputs.ec2_sg_id }}"
-          echo "${{ steps.deploy.outputs.db_sg_id }}"
           echo "${{ steps.deploy.outputs.db_endpoint }}"
           echo "${{ steps.deploy.outputs.instance_endpoint }}"
 
-
-
-
-
-
-
-
-
-
+          
   # deploy-backend-images:
   #   runs-on: ubuntu-latest
   #   needs: deploy-ec2
@@ -94,7 +91,7 @@ jobs:
   #     with:
   #       host: ${{ needs.deploy-ec2.outputs.instance_endpoint }}
   #       username: ubuntu
-  #       key: vladskvortsov-mind-master-ec2kp-nPMRp
+  #       key: project1-key
   #       script: |
   #         aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
   #         docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
