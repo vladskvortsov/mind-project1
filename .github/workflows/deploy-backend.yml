@@ -46,7 +46,7 @@ jobs:
         aws_ec2_instance_root_vol_size: 8
         aws_ec2_port_list: 8000,8003,8080
         aws_ec2_iam_instance_profile: 
-        aws_ec2_create_keypair_sm: project1-key
+        # aws_ec2_create_keypair_sm: project1-key
         docker_repo_app_directory: ./project1/
         aws_ec2_user_data_file: ./project1/user_data.sh<<EOF
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
