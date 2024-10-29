@@ -48,12 +48,12 @@ jobs:
         aws_ec2_iam_instance_profile: 
         # aws_ec2_create_keypair_sm: project1-key
         docker_repo_app_directory: ./project1/
-        aws_ec2_user_data_file: ./project1/user_data.sh<<EOF
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
-          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
-          docker compose up -d
-          EOF
+        # aws_ec2_user_data_file: ./project1/user_data.sh<<EOF
+        #   aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+        #   docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
+        #   docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
+        #   docker compose up -d
+        #   EOF
 
         aws_rds_db_enable: true
         aws_rds_db_name: mydb
@@ -77,26 +77,26 @@ jobs:
           echo "${{ steps.deploy.outputs.instance_endpoint }}"
 
           
-  # deploy-backend-images:
-  #   runs-on: ubuntu-latest
-  #   needs: deploy-ec2
-  #   steps:
-  #   - name: Log in to Amazon ECR
-  #     uses: aws-actions/amazon-ecr-login@v1
-  #     with:
-  #       registry: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+  deploy-backend-images:
+    runs-on: ubuntu-latest
+    needs: deploy-ec2
+    steps:
+    - name: Log in to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v1
+      with:
+        registry: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-  #   - name: Deploy on EC2
-  #     uses: appleboy/ssh-action@master
-  #     with:
-  #       host: ${{ needs.deploy-ec2.outputs.instance_endpoint }}
-  #       username: ubuntu
-  #       key: project1-key
-  #       script: |
-  #         aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-  #         docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
-  #         docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
-  #         docker compose up -d
+    - name: Deploy on EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ needs.deploy-ec2.outputs.instance_endpoint }}
+        username: ubuntu
+        key: project1-key
+        script: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
+          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
+          docker compose up -d
 
 
 
