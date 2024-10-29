@@ -8,76 +8,14 @@ on:
   #     - 'project1/backend_redis/*'
   #     - 'project1/backend_rds/*'
 jobs:
-  # deploy-vpc:
-  #   runs-on: ubuntu-latest
-  #   outputs: 
-  #     vpc_id: ${{ steps.create_vpc.outputs.vpc_id }}
-  #     public_subnet_id: ${{ steps.create_subnets.outputs.public_subnet_id }}
-  #     private_subnet_id: ${{ steps.create_subnets.outputs.private_subnet_id }}
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v2
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws-region: ${{ secrets.AWS_REGION }}
-          
-  #     - name: Create VPC
-  #       id: create_vpc
-  #       run: |
-  #         VPC_ID=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --query 'Vpc.VpcId' --output text)
-  #         aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-support
-  #         aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-hostnames
-  #         echo "VPC_ID=$VPC_ID" >> $GITHUB_ENV
-  #         echo "vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
-
-
-  #     - name: Create Subnets
-  #       id: create_subnets
-  #       run: |
-  #         PUBLIC_SUBNET_ID=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --cidr-block 10.0.1.0/24 --query 'Subnet.SubnetId' --output text)
-  #         PRIVATE_SUBNET_ID=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --cidr-block 10.0.2.0/24 --query 'Subnet.SubnetId' --output text)
-  #         echo "PUBLIC_SUBNET_ID=$PUBLIC_SUBNET_ID" >> $GITHUB_ENV
-  #         echo "PRIVATE_SUBNET_ID=$PRIVATE_SUBNET_ID" >> $GITHUB_ENV
-  #         echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
-  #         echo "private_subnet_id=$PRIVATE_SUBNET_ID" >> $GITHUB_OUTPUT
-
-  #     - name: Create Internet Gateway and Route Table
-  #       id: create_igw
-  #       run: |
-  #         IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
-  #         aws ec2 attach-internet-gateway --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --internet-gateway-id $IGW_ID
-  #         RT_ID=$(aws ec2 create-route-table --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --query 'RouteTable.RouteTableId' --output text)
-  #         aws ec2 create-route --route-table-id $RT_ID --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW_ID
-  #         aws ec2 associate-route-table --subnet-id ${{ steps.create_subnets.outputs.public_subnet_id }} --route-table-id $RT_ID
-
-  #     - name: Create Security Groups
-  #       id: create_sg
-  #       run: |
-  #         ALB_SG_ID=$(aws ec2 create-security-group --group-name alb-sg --description "Security group for ALB" --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --query 'GroupId' --output text)
-  #         aws ec2 authorize-security-group-ingress --group-id $ALB_SG_ID --protocol tcp --port 80 --cidr 0.0.0.0/0
-  #         aws ec2 authorize-security-group-ingress --group-id $ALB_SG_ID --protocol tcp --port 443 --cidr 0.0.0.0/0
-  #         ECS_SG_ID=$(aws ec2 create-security-group --group-name ecs-sg --description "Security group for ECS" --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --query 'GroupId' --output text)
-  #         aws ec2 authorize-security-group-ingress --group-id $ECS_SG_ID --protocol tcp --port 80 --source-group $ALB_SG_ID
-  #         echo "ecs_sg_id=$ECS_SG_ID" >> $GITHUB_OUTPUT
-  #         echo "alb_sg_id=$ALB_SG_ID" >> $GITHUB_OUTPUT
-
-  #         echo "${{ steps.create_vpc.outputs.vpc_id }}"
-  #         echo "${{ steps.create_subnets.outputs.public_subnet_id }}"
-  #         echo "${{ steps.create_subnets.outputs.private_subnet_id }}"
-
-
   deploy-ec2:
     runs-on: ubuntu-latest
     outputs:
       aws_vpc_id: ${{ steps.deploy.outputs.aws_vpc_id }}
       ec2_sg_id: ${{ steps.deploy.outputs.ec2_sg_id }}
       db_sg_id: ${{ steps.deploy.outputs.db_sg_id }}
-      db_secret_details_name: ${{ steps.deploy.outputs.db_secret_details_name }}
+      db_endpoint: ${{ steps.deploy.outputs.db_endpoint }}
       instance_endpoint: ${{ steps.deploy.outputs.instance_endpoint }}
-      instance_public_dns: ${{ steps.deploy.outputs.instance_public_dns }}
     steps:
     - id: deploy
       name: Deploy
@@ -100,7 +38,7 @@ jobs:
         aws_vpc_private_subnets: 10.10.20.0/24
         aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
         aws_elb_app_port: 8000,8003,8080
-        aws_elb_listen_port: 8000,8003,8080,80
+        aws_elb_listen_port: 8000,8003,80
         # aws_elb_healthcheck: "HTTP:8080"
 
         
@@ -109,17 +47,17 @@ jobs:
         aws_ec2_port_list: 8000,8003,8080
         docker_repo_app_directory: ./project1/
           
-        # aws_rds_db_enable: true
-        # aws_rds_db_name: mydb
-        # aws_rds_db_user: dbuser
-        # aws_rds_db_engine: postgres
-        # # aws_rds_db_security_group_name:
-        # aws_rds_db_port: 5432
-        # aws_rds_db_allocated_storage: 10
-        # aws_rds_db_instance_class: db.t3.micro
-        # aws_rds_db_final_snapshot:
-        # aws_rds_db_multi_az: true
-        # aws_rds_db_apply_immediately: true
+        aws_rds_db_enable: true
+        aws_rds_db_name: mydb
+        aws_rds_db_user: dbuser
+        aws_rds_db_engine: postgres
+        # aws_rds_db_security_group_name:
+        aws_rds_db_port: 5432
+        aws_rds_db_allocated_storage: 20
+        aws_rds_db_instance_class: db.t4.micro
+        aws_rds_db_final_snapshot:
+        aws_rds_db_multi_az: false
+        aws_rds_db_apply_immediately: true
 
 
     - name: Show results
@@ -128,30 +66,49 @@ jobs:
           echo "${{ steps.deploy.outputs.aws_vpc_id }}"
           echo "${{ steps.deploy.outputs.ec2_sg_id }}"
           echo "${{ steps.deploy.outputs.db_sg_id }}"
-          echo "${{ steps.deploy.outputs.db_secret_details_name }}"
+          echo "${{ steps.deploy.outputs.db_endpoint }}"
           echo "${{ steps.deploy.outputs.instance_endpoint }}"
-          echo "${{ steps.deploy.outputs.instance_public_dns }}"
 
-  deploy-backend-images:
-    runs-on: ubuntu-latest
-    needs: deploy-ec2
-    steps:
-    - name: Log in to Amazon ECR
-      uses: aws-actions/amazon-ecr-login@v1
-      with:
-        registry: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-    - name: Deploy on EC2
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ needs.deploy-ec2.outputs.instance_endpoint }}
-        username: ubuntu
-        key: vladskvortsov-mind-master-ec2kp-nPMRp
-        script: |
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
-          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
-          docker compose up -d
+
+
+
+
+
+
+
+          
+  # deploy-backend-images:
+  #   runs-on: ubuntu-latest
+  #   needs: deploy-ec2
+  #   steps:
+  #   - name: Log in to Amazon ECR
+  #     uses: aws-actions/amazon-ecr-login@v1
+  #     with:
+  #       registry: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+  #   - name: Deploy on EC2
+  #     uses: appleboy/ssh-action@master
+  #     with:
+  #       host: ${{ needs.deploy-ec2.outputs.instance_endpoint }}
+  #       username: ubuntu
+  #       key: vladskvortsov-mind-master-ec2kp-nPMRp
+  #       script: |
+  #         aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+  #         docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
+  #         docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
+  #         docker compose up -d
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -226,3 +183,62 @@ jobs:
 
 
 
+  # deploy-vpc:
+  #   runs-on: ubuntu-latest
+  #   outputs: 
+  #     vpc_id: ${{ steps.create_vpc.outputs.vpc_id }}
+  #     public_subnet_id: ${{ steps.create_subnets.outputs.public_subnet_id }}
+  #     private_subnet_id: ${{ steps.create_subnets.outputs.private_subnet_id }}
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+  #     - name: Configure AWS credentials
+  #       uses: aws-actions/configure-aws-credentials@v2
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: ${{ secrets.AWS_REGION }}
+          
+  #     - name: Create VPC
+  #       id: create_vpc
+  #       run: |
+  #         VPC_ID=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --query 'Vpc.VpcId' --output text)
+  #         aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-support
+  #         aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-hostnames
+  #         echo "VPC_ID=$VPC_ID" >> $GITHUB_ENV
+  #         echo "vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
+
+
+  #     - name: Create Subnets
+  #       id: create_subnets
+  #       run: |
+  #         PUBLIC_SUBNET_ID=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --cidr-block 10.0.1.0/24 --query 'Subnet.SubnetId' --output text)
+  #         PRIVATE_SUBNET_ID=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --cidr-block 10.0.2.0/24 --query 'Subnet.SubnetId' --output text)
+  #         echo "PUBLIC_SUBNET_ID=$PUBLIC_SUBNET_ID" >> $GITHUB_ENV
+  #         echo "PRIVATE_SUBNET_ID=$PRIVATE_SUBNET_ID" >> $GITHUB_ENV
+  #         echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
+  #         echo "private_subnet_id=$PRIVATE_SUBNET_ID" >> $GITHUB_OUTPUT
+
+  #     - name: Create Internet Gateway and Route Table
+  #       id: create_igw
+  #       run: |
+  #         IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
+  #         aws ec2 attach-internet-gateway --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --internet-gateway-id $IGW_ID
+  #         RT_ID=$(aws ec2 create-route-table --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --query 'RouteTable.RouteTableId' --output text)
+  #         aws ec2 create-route --route-table-id $RT_ID --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW_ID
+  #         aws ec2 associate-route-table --subnet-id ${{ steps.create_subnets.outputs.public_subnet_id }} --route-table-id $RT_ID
+
+  #     - name: Create Security Groups
+  #       id: create_sg
+  #       run: |
+  #         ALB_SG_ID=$(aws ec2 create-security-group --group-name alb-sg --description "Security group for ALB" --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --query 'GroupId' --output text)
+  #         aws ec2 authorize-security-group-ingress --group-id $ALB_SG_ID --protocol tcp --port 80 --cidr 0.0.0.0/0
+  #         aws ec2 authorize-security-group-ingress --group-id $ALB_SG_ID --protocol tcp --port 443 --cidr 0.0.0.0/0
+  #         ECS_SG_ID=$(aws ec2 create-security-group --group-name ecs-sg --description "Security group for ECS" --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --query 'GroupId' --output text)
+  #         aws ec2 authorize-security-group-ingress --group-id $ECS_SG_ID --protocol tcp --port 80 --source-group $ALB_SG_ID
+  #         echo "ecs_sg_id=$ECS_SG_ID" >> $GITHUB_OUTPUT
+  #         echo "alb_sg_id=$ALB_SG_ID" >> $GITHUB_OUTPUT
+
+  #         echo "${{ steps.create_vpc.outputs.vpc_id }}"
+  #         echo "${{ steps.create_subnets.outputs.public_subnet_id }}"
+  #         echo "${{ steps.create_subnets.outputs.private_subnet_id }}"
