@@ -8,80 +8,111 @@ on:
   #     - 'project1/backend_redis/*'
   #     - 'project1/backend_rds/*'
 jobs:
-  # deploy-ec2-rds:
-  #   runs-on: ubuntu-latest 
-  #   outputs:
-  #     aws_vpc_id: ${{ steps.deploy.outputs.aws_vpc_id }}
-  #     ec2_sg_id: ${{ steps.deploy.outputs.ec2_sg_id }}
-  #     db_sg_id: ${{ steps.deploy.outputs.db_sg_id }}
-  #     db_endpoint: ${{ steps.deploy.outputs.db_endpoint }}
-  #     instance_endpoint: ${{ steps.deploy.outputs.instance_endpoint }}
-  #   steps:
-  #   - id: deploy
-  #     name: Deploy EC2 and RDS
-  #     uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
-  #     with:
-  #       aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #       aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #       aws_default_region: ${{ secrets.AWS_REGION }}
-
-  #       ansible_start_docker_timeout: 600
-
-  #       # env_ghs: ${{ secrets.DOT_ENV }}
-  #       # env_ghv: ${{ vars.VARS }}
-
-
-  #       aws_vpc_create: true
-  #       aws_vpc_name: project1-vpc
-  #       # aws_vpc_cidr_block: 10.0.0.0/16
-  #       aws_vpc_public_subnets: 10.10.10.0/24
-  #       aws_vpc_private_subnets: 10.10.20.0/24
-  #       aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
-  #       aws_elb_app_port: 8000,8003,8080
-  #       aws_elb_listen_port: 8000,8003,80
-  #       # aws_elb_healthcheck: "HTTP:8080"
-
-        
-  #       aws_ec2_instance_type: t3.micro
-  #       aws_ec2_instance_root_vol_size: 8
-  #       aws_ec2_port_list: 8000,8003,8080
-  #       aws_ec2_iam_instance_profile: 
-  #       # aws_ec2_create_keypair_sm: project1-key
-  #       docker_repo_app_directory: ./project1/
-  #       # aws_ec2_user_data_file: ./project1/user_data.sh<<EOF
-  #       #   aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-  #       #   docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
-  #       #   docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
-  #       #   docker compose up -d
-  #       #   EOF
-
-
-  #       aws_rds_db_enable: true 
-        
-  #       aws_rds_db_name: mydb
-  #       aws_rds_db_user: dbuser
-  #       aws_rds_db_engine: postgres
-  #       aws_rds_db_port: 5432
-  #       aws_rds_db_allocated_storage: 20
-  #       aws_rds_db_instance_class: db.t3.micro
-  #       aws_rds_db_final_snapshot:
-  #       aws_rds_db_multi_az: false
-  #       aws_rds_db_apply_immediately: true
-
-  pull-and-run:
-    runs-on: ubuntu-latest
+  deploy-ec2-rds:
+    runs-on: ubuntu-latest 
+    outputs:
+      aws_vpc_id: ${{ steps.deploy.outputs.aws_vpc_id }}
+      ec2_sg_id: ${{ steps.deploy.outputs.ec2_sg_id }}
+      db_sg_id: ${{ steps.deploy.outputs.db_sg_id }}
+      db_endpoint: ${{ steps.deploy.outputs.db_endpoint }}
+      instance_endpoint: ${{ steps.deploy.outputs.instance_endpoint }}
     steps:
-    - uses: actions/checkout@v2
-    - uses: chris5451/aws-ecr-run-image@main
+    - id: create-user-data
+      name: Create user data file
+      run: |
+          touch ./mind/project1/user_data.sh <<EOF
+          #!/bin/bash
+          apt update
+          apt install unzip
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install          
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
+          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
+          cd mind/
+          docker compose up -d
+          EOF
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
       with:
-        access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-        repo: project1-backend
-        region: ${{ secrets.AWS_REGION }}
-        tag: backend-rds
-        name: backend-rds
-        port: 5432
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Create IAM Role
+      run: |
+        aws iam create-role --role-name project1-ecr-access --assume-role-policy-document ./mind/project1/project1-ecr-access.json
+
+    - name: Attach Policy to Role
+      run: |
+        aws iam put-role-policy --role-name project1-ecr-access --policy-name project1-ecr-access --policy-document ./mind/project1/project1-ecr-access.json
+        
+    - id: deploy
+      name: Deploy EC2 and RDS
+      uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_default_region: ${{ secrets.AWS_REGION }}
+
+
+        ansible_start_docker_timeout: 600
+
+
+        aws_vpc_create: true
+        aws_vpc_name: project1-vpc
+        # aws_vpc_cidr_block: 10.0.0.0/16
+        aws_vpc_public_subnets: 10.10.10.0/24
+        aws_vpc_private_subnets: 10.10.20.0/24
+        aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
+        aws_elb_app_port: 8000,8003,8080
+        aws_elb_listen_port: 8000,8003,80
+        # aws_elb_healthcheck: "HTTP:8080"
+
+        
+        aws_ec2_instance_type: t3.micro
+        aws_ec2_instance_root_vol_size: 8
+        aws_ec2_port_list: 8000,8003,8080
+        aws_ec2_iam_instance_profile: project1-ecr-access
+        docker_repo_app_directory: ./project1/
+        aws_ec2_user_data_file: ./mind/project1/user_data.sh
+
+
+        # aws_rds_db_enable: true        
+        # aws_rds_db_name: mydb
+        # aws_rds_db_user: dbuser
+        # aws_rds_db_engine: postgres
+        # aws_rds_db_port: 5432
+        # aws_rds_db_allocated_storage: 20
+        # aws_rds_db_instance_class: db.t3.micro
+        # aws_rds_db_final_snapshot:
+        # aws_rds_db_multi_az: false
+        # aws_rds_db_apply_immediately: true
+
+    - name: Show results
+      id: show
+      run: |
+          echo "${{ steps.deploy.outputs.aws_vpc_id }}"
+          echo "${{ steps.deploy.outputs.ec2_sg_id }}"
+          echo "${{ steps.deploy.outputs.db_endpoint }}"
+          echo "${{ steps.deploy.outputs.instance_endpoint }}"
+
+  # pull-and-run:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #   - uses: chris5451/aws-ecr-run-image@main
+  #     with:
+  #       access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #       account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+  #       repo: project1-backend
+  #       region: ${{ secrets.AWS_REGION }}
+  #       tag: backend-rds
+  #       name: backend-rds
+  #       port: 5432
 
     # - name: configure aws credentials
     #   uses: aws-actions/configure-aws-credentials@v4
@@ -103,13 +134,7 @@ jobs:
     #       cd mind
     #       docker compose up -d
 
-    - name: Show results
-      id: show
-      run: |
-          echo "${{ steps.deploy.outputs.aws_vpc_id }}"
-          echo "${{ steps.deploy.outputs.ec2_sg_id }}"
-          echo "${{ steps.deploy.outputs.db_endpoint }}"
-          echo "${{ steps.deploy.outputs.instance_endpoint }}"
+
 
   # deploy-elascticache:
   #   runs-on: ubuntu-latest
