@@ -17,22 +17,25 @@ jobs:
       db_endpoint: ${{ steps.deploy.outputs.db_endpoint }}
       instance_endpoint: ${{ steps.deploy.outputs.instance_endpoint }}
     steps:
-    - id: create-user-data
-      name: Create user data file
-      run: |
-          touch ./mind/project1/user_data.sh <<EOF
-          #!/bin/bash
-          apt update
-          apt install unzip
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          ./aws/install          
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
-          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
-          cd mind/
-          docker compose up -d
-          EOF
+    # - id: create-user-data
+    #   name: Create user data file
+    #   run: |
+    #       USER_DATA=$(cat <<EOF
+    #       #!/bin/bash 
+    #       apt update 
+    #       apt install unzip
+    #       curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    #       unzip awscliv2.zip
+    #       ./aws/install          
+    #       aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+    #       docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
+    #       docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
+    #       cd mind/
+    #       docker compose up -d
+    #       EOF
+    #       )
+    #       echo "$USER_DATA" >> ./mind/project1/user_data.sh
+
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
