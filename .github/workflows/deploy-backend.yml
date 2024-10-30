@@ -48,7 +48,23 @@ jobs:
       run: |
             aws iam create-role \
             --role-name project1-ecr-access \
-            --assume-role-policy-document ./mind/project1/project1-ecr-access.json
+            --assume-role-policy-document '{
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "VisualEditor0",
+                        "Effect": "Allow",
+                        "Action": [
+                            "logs:CreateLogStream",
+                            "logs:DescribeLogStreams",
+                            "ecr:*",
+                            "logs:CreateLogGroup",
+                            "logs:PutLogEvents"
+                        ],
+                        "Resource": "*"
+                    }
+                ]
+            }'
             
             aws iam create-instance-profile \
             --instance-profile-name project1-ecr-access
