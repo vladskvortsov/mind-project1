@@ -46,11 +46,20 @@ jobs:
 
     - name: Create IAM Role
       run: |
-        aws iam create-role --role-name project1-ecr-access --assume-role-policy-document ./mind/project1/project1-ecr-access.json
+            aws iam create-role \
+            --role-name project1-ecr-access \
+            --assume-role-policy-document ./mind/project1/project1-ecr-access.json
+            
+            aws iam create-instance-profile \
+            --instance-profile-name project1-ecr-access
 
-    - name: Attach Policy to Role
-      run: |
-        aws iam put-role-policy --role-name project1-ecr-access --policy-name project1-ecr-access --policy-document ./mind/project1/project1-ecr-access.json
+            aws iam add-role-to-instance-profile \
+             --role-name project1-ecr-access \
+             --instance-profile-name project1-ecr-access
+
+
+    # - name: Attach Policy to Role
+    #   run: |
         
     - id: deploy
       name: Deploy EC2 and RDS
