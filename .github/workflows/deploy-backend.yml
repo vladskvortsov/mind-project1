@@ -80,7 +80,7 @@ jobs:
         repo: project1-backend
         region: ${{ secrets.AWS_REGION }}
         tag: backend-rds
-        name: 194722414339.dkr.ecr.eu-north-1.amazonaws.com/project1-backend:backend-rds
+        name: backend-rds
         port: 5432
 
     # - name: configure aws credentials
