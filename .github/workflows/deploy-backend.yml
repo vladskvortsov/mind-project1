@@ -8,7 +8,7 @@ on:
   #     - 'project1/backend_redis/*'
   #     - 'project1/backend_rds/*'
 jobs:
-  deploy-ec2:
+  deploy-ec2-rds:
     runs-on: ubuntu-latest
     outputs:
       aws_vpc_id: ${{ steps.deploy.outputs.aws_vpc_id }}
@@ -18,7 +18,7 @@ jobs:
       instance_endpoint: ${{ steps.deploy.outputs.instance_endpoint }}
     steps:
     - id: deploy
-      name: Deploy
+      name: Deploy EC2 and RDS
       uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
       with:
         aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -58,7 +58,6 @@ jobs:
         aws_rds_db_enable: true
         aws_rds_db_name: mydb
         aws_rds_db_user: dbuser
-        aws_rds_db_password: mypassword
         aws_rds_db_engine: postgres
         aws_rds_db_port: 5432
         aws_rds_db_allocated_storage: 20
@@ -76,10 +75,32 @@ jobs:
           echo "${{ steps.deploy.outputs.db_endpoint }}"
           echo "${{ steps.deploy.outputs.instance_endpoint }}"
 
+  deploy-elascticache:
+    runs-on: ubuntu-latest
+    needs: deploy-ec2-rds
+    outputs:
+      redis_connection_string_secret: ${{ steps.create-redis.outputs.redis_connection_string_secret }}
+      redis_sg_id: ${{ steps.create-redis.outputs.redis_sg_id }}
+    steps:
+    - name: Create a Redis DB
+      id: create-redis
+      uses: bitovi/github-actions-deploy-redis-db@v0.1.1
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_default_region: ${{ secrets.AWS_REGION }}
+
+        aws_redis_enable: true
+        aws_redis_port: 6379
+        aws_redis_multi_az_enabled: false
+        aws_redis_apply_immediately: true
+        aws_vpc_id: ${{ needs.deploy-ec2-rds.outputs.aws_vpc_id }}
+        # aws_vpc_subnet_id: 
+        aws_redis_allowed_security_groups: ${{ needs.deploy-ec2-rds.outputs.db_sg_id }}
           
   deploy-backend-images:
     runs-on: ubuntu-latest
-    needs: deploy-ec2
+    needs: deploy-ec2-rds
     steps:
     - name: Log in to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v1
