@@ -97,7 +97,9 @@ jobs:
         aws_vpc_id: ${{ needs.deploy-ec2-rds.outputs.aws_vpc_id }}
         # aws_vpc_subnet_id: 
         aws_redis_allowed_security_groups: ${{ needs.deploy-ec2-rds.outputs.db_sg_id }}
-          
+         
+
+        
   deploy-backend-images:
     runs-on: ubuntu-latest
     needs: deploy-ec2-rds
