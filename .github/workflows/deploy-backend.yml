@@ -37,41 +37,39 @@ jobs:
     #       echo "$USER_DATA" >> ./mind/project1/user_data.sh
 
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+    # - name: Configure AWS credentials
+    #   uses: aws-actions/configure-aws-credentials@v1
+    #   with:
+    #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #     aws-region: ${{ secrets.AWS_REGION }}
 
     - name: Create IAM Role
       run: |
-        # aws iam create-role \
-        # --role-name project1-ecr-access \
-        # --assume-role-policy-document '{
-        #             "Version": "2012-10-17",
-        #             "Statement": [
-        #                 {
-        #                     "Sid": "VisualEditor0",
-        #                     "Effect": "Allow",
-        #                     "Action": [
-        #                         "logs:CreateLogStream",
-        #                         "logs:DescribeLogStreams",
-        #                         "ecr:*",
-        #                         "logs:CreateLogGroup",
-        #                         "logs:PutLogEvents"
-        #                     ],
-        #                     "Resource": "*"
-        #                 }
-        #             ]
-        #         }'
+              aws iam create-role \
+              --role-name project1-ecr-access \
+              --assume-role-policy-document '{
+                  "Version": "2012-10-17",
+                  "Statement": [
+                      {
+                          "Effect": "Allow",
+                          "Action": [
+                              "ecr:GetAuthorizationToken",
+                              "ecr:BatchGetImage",
+                              "ecr:GetDownloadUrlForLayer",
+                              "ecr:BatchImportUpstreamImage"
+                          ],
+                          "Resource": "*"
+                      }
+                  ]
+                }'
             
-            aws iam create-instance-profile \
-            --instance-profile-name project1-ecr-access
+              aws iam create-instance-profile \
+              --instance-profile-name project1-ecr-access
 
-            aws iam add-role-to-instance-profile \
-             --role-name AmazonEC2ContainerRegistryPullOnly \
-             --instance-profile-name project1-ecr-access
+              aws iam add-role-to-instance-profile \
+              --role-name project1-ecr-access \
+              --instance-profile-name project1-ecr-access
 
 
     # - name: Attach Policy to Role
