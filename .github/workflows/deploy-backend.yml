@@ -53,12 +53,12 @@ jobs:
 
     - name: Attach Role to the profile
       run: |
-            aws iam create-instance-profile \
-            --instance-profile-name project1-ecr-access
-
-            aws iam add-role-to-instance-profile \
-             --role-name ecr-pull-role \
+             aws iam get-instance-profile --instance-profile-name project1-ecr-access || aws iam create-instance-profile \
              --instance-profile-name project1-ecr-access
+
+              aws iam add-role-to-instance-profile \
+              --role-name ecr-pull-role \
+              --instance-profile-name project1-ecr-access
 
 
 
