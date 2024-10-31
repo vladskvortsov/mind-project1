@@ -46,9 +46,10 @@ jobs:
 
     - name: Create IAM Role
       run: |
-          aws iam create-role \
+          aws iam get-role --role-name ecr-pull-role || aws iam create-role \
           --role-name ecr-pull-role \
           --assume-role-policy-document file:/project1/ecr-pull-role.json
+
 
     - name: Attach Role to the profile
       run: |
