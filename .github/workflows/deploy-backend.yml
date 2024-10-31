@@ -48,7 +48,7 @@ jobs:
       run: |
           aws iam create-role \
           --role-name ecr-pull-role \
-          --assume-role-policy-document ./project1/ecr-pull-role.json
+          --assume-role-policy-document file:/project1/ecr-pull-role.json
 
     - name: Attach Role to the profile
       run: |
