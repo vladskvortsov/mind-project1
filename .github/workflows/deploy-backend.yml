@@ -83,7 +83,7 @@ jobs:
         
         aws_ec2_instance_type: t3.micro
         aws_ec2_instance_root_vol_size: 8
-        aws_ec2_port_list: 8000,8003,8080,22
+        aws_ec2_port_list: 8000,8003,8080
         aws_ec2_iam_instance_profile: project1-ecr-access
         docker_repo_app_directory: ./project1/
         aws_ec2_user_data_file: ./project1/user_data.sh
