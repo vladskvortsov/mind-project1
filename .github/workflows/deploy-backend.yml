@@ -17,77 +17,77 @@ jobs:
       db_endpoint: ${{ steps.deploy.outputs.db_endpoint }}
       instance_endpoint: ${{ steps.deploy.outputs.instance_endpoint }}
     steps:
-    # - name: Configure AWS credentials
-    #   uses: aws-actions/configure-aws-credentials@v1
-    #   with:
-    #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    #     aws-region: ${{ secrets.AWS_REGION }}
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
-    # - name: Create IAM Role
-    #   run: |
-    #       aws iam get-role --role-name ecr-pull-role || aws iam create-role \
-    #       --role-name ecr-pull-role \
-    #       --assume-role-policy-document file:/project1/ecr-pull-role.json
-
-
-    # - name: Attach Role to the profile
-    #   run: |
-    #          aws iam get-instance-profile --instance-profile-name project1-ecr-access || aws iam create-instance-profile \
-    #          --instance-profile-name project1-ecr-access
+    - name: Create IAM Role
+      run: |
+          aws iam get-role --role-name ecr-pull-role || aws iam create-role \
+          --role-name ecr-pull-role \
+          --assume-role-policy-document file:/project1/ecr-pull-role.json
 
 
-    #           ROLES_ATTACHED=$(aws iam get-instance-profile --instance-profile-name project1-ecr-access --query "InstanceProfile.Roles[*].RoleName" --output text)
-    #           if [[ "$ROLES_ATTACHED" != *"$ROLE_NAME"* ]]; then
-    #             aws iam add-role-to-instance-profile --instance-profile-name project1-ecr-access --role-name ecr-pull-role
-    #           fi
+    - name: Attach Role to the profile
+      run: |
+             aws iam get-instance-profile --instance-profile-name project1-ecr-access || aws iam create-instance-profile \
+             --instance-profile-name project1-ecr-access
+
+
+              ROLES_ATTACHED=$(aws iam get-instance-profile --instance-profile-name project1-ecr-access --query "InstanceProfile.Roles[*].RoleName" --output text)
+              if [[ "$ROLES_ATTACHED" != *"$ROLE_NAME"* ]]; then
+                aws iam add-role-to-instance-profile --instance-profile-name project1-ecr-access --role-name ecr-pull-role
+              fi
 
 
 
 
         
-    # - id: deploy
-    #   name: Deploy EC2 and RDS
-    #   uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
-    #   with:
-    #     aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    #     aws_default_region: ${{ secrets.AWS_REGION }}
+    - id: deploy
+      name: Deploy EC2 and RDS
+      uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_default_region: ${{ secrets.AWS_REGION }}
 
 
-    #     ansible_start_docker_timeout: 600
+        ansible_start_docker_timeout: 600
 
 
-    #     aws_vpc_create: true
-    #     aws_vpc_name: project1-vpc
-    #     # aws_vpc_cidr_block: 10.0.0.0/16
-    #     aws_vpc_public_subnets: 10.10.10.0/24
-    #     aws_vpc_private_subnets: 10.10.20.0/24
-    #     aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
-    #     aws_elb_app_port: 8000,8003,8080
-    #     aws_elb_listen_port: 8000,8003,80
-    #     # aws_elb_healthcheck: "HTTP:8080"
+        aws_vpc_create: true
+        aws_vpc_name: project1-vpc
+        # aws_vpc_cidr_block: 10.0.0.0/16
+        aws_vpc_public_subnets: 10.10.10.0/24
+        aws_vpc_private_subnets: 10.10.20.0/24
+        aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
+        aws_elb_app_port: 8000,8003,8080
+        aws_elb_listen_port: 8000,8003,80
+        # aws_elb_healthcheck: "HTTP:8080"
 
         
-    #     aws_ec2_instance_type: t3.micro
-    #     aws_ec2_instance_root_vol_size: 8
-    #     aws_ec2_port_list: 8000,8003,8080
-    #     aws_ec2_iam_instance_profile: project1-ecr-access
-    #     docker_repo_app_directory: ./project1/
-    #     # aws_ec2_user_data_file: ./project1/user_data.sh
-    #     aws_ec2_create_keypair_sm: true
+        aws_ec2_instance_type: t3.micro
+        aws_ec2_instance_root_vol_size: 8
+        aws_ec2_port_list: 8000,8003,8080
+        aws_ec2_iam_instance_profile: project1-ecr-access
+        docker_repo_app_directory: ./project1/
+        # aws_ec2_user_data_file: ./project1/user_data.sh
+        aws_ec2_create_keypair_sm: true
 
 
-    #     # aws_rds_db_enable: true        
-    #     # aws_rds_db_name: mydb
-    #     # aws_rds_db_user: dbuser
-    #     # aws_rds_db_engine: postgres
-    #     # aws_rds_db_port: 5432
-    #     # aws_rds_db_allocated_storage: 20
-    #     # aws_rds_db_instance_class: db.t3.micro
-    #     # aws_rds_db_final_snapshot:
-    #     # aws_rds_db_multi_az: false
-    #     # aws_rds_db_apply_immediately: true
+        # aws_rds_db_enable: true        
+        # aws_rds_db_name: mydb
+        # aws_rds_db_user: dbuser
+        # aws_rds_db_engine: postgres
+        # aws_rds_db_port: 5432
+        # aws_rds_db_allocated_storage: 20
+        # aws_rds_db_instance_class: db.t3.micro
+        # aws_rds_db_final_snapshot:
+        # aws_rds_db_multi_az: false
+        # aws_rds_db_apply_immediately: true
 
     # - name: Show results
     #   id: show
