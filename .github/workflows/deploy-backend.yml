@@ -123,9 +123,9 @@ jobs:
     - name: Deploy on EC2
       uses: appleboy/ssh-action@master
       with:
-        host: $PUBLIC_IP
+        host: 16.16.64.148
         username: ubuntu
-        key: $KEY_NAME
+        key: vladskvortsov-mind-master-ec2kp-nPMRp
         script: |
               cd mind/
               apt update 
