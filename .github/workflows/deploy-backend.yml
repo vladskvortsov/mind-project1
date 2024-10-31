@@ -108,7 +108,7 @@ jobs:
       run: |
 
         # Describe the instance and fetch details
-          INSTANCE_DETAILS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=vladskvortsov-mind-master" --query "Reservations[0].Instances[0]" --output json)
+          INSTANCE_DETAILS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values="vladskvortsov-mind-master - Instance"" --query "Reservations[0].Instances[0]" --output json)
 
         # Extract Public IP and Key Name
         PUBLIC_IP=$(echo $INSTANCE_DETAILS | jq -r '.PublicIpAddress')
