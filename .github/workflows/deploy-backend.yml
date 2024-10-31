@@ -56,9 +56,12 @@ jobs:
              aws iam get-instance-profile --instance-profile-name project1-ecr-access || aws iam create-instance-profile \
              --instance-profile-name project1-ecr-access
 
-              aws iam add-role-to-instance-profile \
-              --role-name ecr-pull-role \
-              --instance-profile-name project1-ecr-access
+
+              ROLES_ATTACHED=$(aws iam get-instance-profile --instance-profile-name project1-ecr-access --query "InstanceProfile.Roles[*].RoleName" --output text)
+              if [[ "$ROLES_ATTACHED" != *"$ROLE_NAME"* ]]; then
+                aws iam add-role-to-instance-profile --instance-profile-name project1-ecr-access --role-name ecr-pull-role
+              fi
+
 
 
 
