@@ -71,11 +71,10 @@ jobs:
         
         aws_ec2_instance_type: t3.micro
         aws_ec2_instance_root_vol_size: 8
-        aws_ec2_port_list: 8000,8003,8080
+        aws_ec2_port_list: 8000,8003,8080,22
         aws_ec2_iam_instance_profile: project1-ecr-access
         docker_repo_app_directory: ./project1/
         # aws_ec2_user_data_file: ./project1/user_data.sh
-        aws_ec2_create_keypair_sm: true
 
 
         # aws_rds_db_enable: true        
@@ -104,12 +103,29 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
 
+    - name: Describe EC2 Instance
+      id: describe-instance
+      run: |
+
+        # Describe the instance and fetch details
+          INSTANCE_DETAILS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=vladskvortsov-mind-master" --query "Reservations[0].Instances[0]" --output json)
+
+        # Extract Public IP and Key Name
+        PUBLIC_IP=$(echo $INSTANCE_DETAILS | jq -r '.PublicIpAddress')
+        KEY_NAME=$(echo $INSTANCE_DETAILS | jq -r '.KeyName')
+
+        echo "Public IP Address: $PUBLIC_IP"
+        echo "Key Pair Name: $KEY_NAME"
+
+                  echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+                  echo "KEY_NAME=$KEY_NAME" >> $GITHUB_ENV
+
     - name: Deploy on EC2
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ steps.deploy.outputs.instance_endpoint }}
+        host: $PUBLIC_IP
         username: ubuntu
-        key: vladskvortsov-mind-master-ec2kp-nPMRp
+        key: $KEY_NAME
         script: |
               cd mind/
               apt update 
