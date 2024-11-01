@@ -52,24 +52,23 @@ jobs:
               fi
 
 
-    - name: Create setup.sh file
-      run: |
-        echo '#!/bin/bash
-        cd mind/
-        apt update
-        apt install -y unzip docker.io
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip awscliv2.zip
-        ./aws/install
-        sudo usermod -aG docker $USER
-        newgrp docker
-        aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-        docker compose up -d' > setup.sh
+#    - name: Create setup.sh file
+      # run: |
+      #   echo '#!/bin/bash
+      #   cd mind/
+      #   apt update
+      #   apt install -y unzip docker.io
+      #   curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      #   unzip awscliv2.zip
+      #   ./aws/install
+      #   sudo usermod -aG docker $USER
+      #   newgrp docker
+      #   aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+      #   docker compose up -d' > setup.sh
 
-        cat setup.sh
-
-    - name: Make setup.sh executable
-      run: chmod +x setup.sh
+      #   cat setup.sh
+    # - name: Make setup.sh executable
+    #   run: chmod +x setup.sh
 
 
         
@@ -131,41 +130,54 @@ jobs:
     #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     #     aws-region: ${{ secrets.AWS_REGION }}
 
-    # - name: Describe EC2 Instance
-    #   id: describe-instance
+    # - name: Create SSH Key Pair
+    #   id: create_key
     #   run: |
+    #     aws ec2 create-key-pair --key-name github-action-key --query 'KeyMaterial' --output text > github-action-key.pem
+    #     chmod 400 github-action-key.pem
+    #   env:
+    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-    #     # Describe the instance and fetch details
-    #       INSTANCE_DETAILS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=vladskvortsov-mind-master - Instance" --query "Reservations[0].Instances[0]" --output json)
+    # - name: Add Key to GitHub Secrets
+    #   run: |
+    #     echo "${{ steps.create_key.outputs.key }}" | gh secret set EC2_SSH_KEY
 
-    #     # Extract Public IP and Key Name
-    #     PUBLIC_IP=$(echo $INSTANCE_DETAILS | jq -r '.PublicIpAddress')
-    #     KEY_NAME=$(echo $INSTANCE_DETAILS | jq -r '.KeyName')
+    - name: Describe EC2 Instance
+      id: describe-instance
+      run: |
 
-    #     echo "Public IP Address: $PUBLIC_IP"
-    #     echo "Key Pair Name: $KEY_NAME"
+        # Describe the instance and fetch details
+          INSTANCE_DETAILS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=vladskvortsov-mind-master - Instance" --query "Reservations[0].Instances[0]" --output json)
 
-    #               echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
-    #               echo "KEY_NAME=$KEY_NAME" >> $GITHUB_ENV
+        # Extract Public IP and Key Name
+        PUBLIC_IP=$(echo $INSTANCE_DETAILS | jq -r '.PublicIpAddress')
+        KEY_NAME=$(echo $INSTANCE_DETAILS | jq -r '.KeyName')
+
+        echo "Public IP Address: $PUBLIC_IP"
+        echo "Key Pair Name: $KEY_NAME"
+
+                  echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+                  echo "KEY_NAME=$KEY_NAME" >> $GITHUB_ENV
 
 
-    # - name: Deploy on EC2
-    #   uses: appleboy/ssh-action@master
-    #   with:
-    #     host: 16.16.64.148
-    #     username: ubuntu
-    #     key: vladskvortsov-mind-master-ec2kp-nPMRp
-    #     script: |
-    #           cd mind/
-    #           apt update 
-    #           apt install unzip
-    #           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-    #           unzip awscliv2.zip
-    #           ./aws/install 
-    #           sudo usermod -aG docker $USER
-    #           newgrp docker         
-    #           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-    #           docker compose up -d
+    - name: Deploy on EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: 16.16.64.148
+        username: ubuntu
+        key: vladskvortsov-mind-master-ec2kp-nPMRp
+        script: |
+              cd mind/
+              apt update 
+              apt install unzip
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip awscliv2.zip
+              ./aws/install 
+              sudo usermod -aG docker $USER
+              newgrp docker         
+              aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+              docker compose up -d
 
 
 
