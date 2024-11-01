@@ -100,7 +100,7 @@ jobs:
         aws_ec2_port_list: 8000,8003,8080
         aws_ec2_iam_instance_profile: project1-ecr-access
         docker_repo_app_directory: ./project1/
-        aws_ec2_user_data_file: ./project1/setup.sh
+#        aws_ec2_user_data_file: ./project1/setup.sh
 
 
         # aws_rds_db_enable: true        
@@ -133,7 +133,7 @@ jobs:
     # - name: Create SSH Key Pair
     #   id: create_key
     #   run: |
-    #     aws ec2 create-key-pair --key-name github-action-key --query 'KeyMaterial' --output text > github-action-key.pem
+    #     aws ec2 create-key-pair --key-name key --query 'KeyMaterial' --output text > github-action-key.pem
     #     chmod 400 github-action-key.pem
     #   env:
     #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
