@@ -66,7 +66,7 @@ jobs:
         aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
         docker compose up -d' > setup.sh
 
-        cat ~/project1/setup.sh
+        cat setup.sh
 
     - name: Make setup.sh executable
       run: chmod +x setup.sh
