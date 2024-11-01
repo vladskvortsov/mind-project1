@@ -161,23 +161,23 @@ jobs:
                   echo "KEY_NAME=$KEY_NAME" >> $GITHUB_ENV
 
 
-    - name: Deploy on EC2
-      uses: appleboy/ssh-action@master
-      with:
-        host: 16.16.64.148
-        username: ubuntu
-        key: vladskvortsov-mind-master-ec2kp-nPMRp
-        script: |
-              cd mind/
-              apt update 
-              apt install unzip
-              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-              unzip awscliv2.zip
-              ./aws/install 
-              sudo usermod -aG docker $USER
-              newgrp docker         
-              aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-              docker compose up -d
+    # - name: Deploy on EC2
+    #   uses: appleboy/ssh-action@master
+    #   with:
+    #     host: 16.16.64.148
+    #     username: ubuntu
+    #     key: vladskvortsov-mind-master-ec2kp-nPMRp
+    #     script: |
+    #           cd mind/
+    #           apt update 
+    #           apt install unzip
+    #           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    #           unzip awscliv2.zip
+    #           ./aws/install 
+    #           sudo usermod -aG docker $USER
+    #           newgrp docker         
+    #           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+    #           docker compose up -d
 
 
 
