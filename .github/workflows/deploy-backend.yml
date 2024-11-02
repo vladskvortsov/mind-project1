@@ -93,6 +93,7 @@ jobs:
         volume-size: 8
         associate-public-ip-address: true
         key-name: key
+        terminate-on-post: false
         user-data: |
           #!/bin/bash
           cd mind/
