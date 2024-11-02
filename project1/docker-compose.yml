@@ -1,18 +1,6 @@
 version: '3.8'
 
 services:
-  init-ecr-login:
-    image: amazonlinux
-    container_name: init-ecr-login
-    entrypoint: /bin/sh -c "
-      yum install -y aws-cli docker;
-      aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 194722414339.dkr.ecr.eu-north-1.amazonaws.com"
-    # environment:
-    #   - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-    #   - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock  # Mount Docker socket
-
   backend_rds:
     env_file:
     - vars.env
@@ -23,8 +11,6 @@ services:
     networks:
       - backend
     entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8000"]
-    depends_on:
-      - init-ecr-login
 
   backend_redis:
     env_file:
@@ -36,8 +22,7 @@ services:
     networks:
       - backend
     entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8003"]
-    depends_on:
-    - init-ecr-login
+
 networks:
   backend:
     driver: bridge

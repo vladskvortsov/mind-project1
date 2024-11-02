@@ -51,13 +51,72 @@ jobs:
                 aws iam add-role-to-instance-profile --instance-profile-name project1-ecr-access --role-name ecr-pull-role
               fi
 
+    - name: Create SSH Key Pair
+      id: create_key
+      run: |
+        aws ec2 create-key-pair --key-name key --query 'KeyMaterial' --output text > github-action-key.pem
+        chmod 400 github-action-key.pem
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    - name: Add Key to GitHub Secrets
+      run: |
+        echo "${{ steps.create_key.outputs.key }}" | gh secret set EC2_SSH_KEY
+
+  
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: ecr-pull-role
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Setup EC2
+      id: create-ec2
+      uses: truemark/aws-ec2-run-instance-action@v5
+      with:
+        # security-group-id: "sg-0baf5bcfe9f21efa0"
+        # subnet-id: "subnet-09a35a2abd797dbf0"
+        name: project1-backend
+        region: ${{ secrets.AWS_REGION }}
+        image-id: "ubuntu-latest"
+        instance-type: "t3.micro"
+        instance-profile: "project1-ecr-access"
+        volume-size: 8
+        associate-public-ip-address: true
+        key-name: key
+        user-data: |
+          #!/bin/bash
+          cd mind/
+          apt update
+          apt install -y unzip docker
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
+          sudo usermod -aG docker $USER
+          newgrp docker
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          docker compose up -d
+
+
+
+
+
+
+
+
+
+
+
+
 
 #    - name: Create setup.sh file
       # run: |
       #   echo '#!/bin/bash
       #   cd mind/
       #   apt update
-      #   apt install -y unzip docker.io
+      #   apt install -y unzip docker
       #   curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
       #   unzip awscliv2.zip
       #   ./aws/install
@@ -71,35 +130,45 @@ jobs:
     #   run: chmod +x setup.sh
 
 
+
+
+
+
+
+
+
+
+
+
         
-    - id: deploy
-      name: Deploy EC2 and RDS
-      uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
-      with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws_default_region: ${{ secrets.AWS_REGION }}
+    # - id: deploy
+    #   name: Deploy EC2 and RDS
+    #   uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
+    #   with:
+    #     aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #     aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #     aws_default_region: ${{ secrets.AWS_REGION }}
 
 
-        ansible_start_docker_timeout: 600
+    #     ansible_start_docker_timeout: 600
 
 
-        aws_vpc_create: true
-        aws_vpc_name: project1-vpc
-        # aws_vpc_cidr_block: 10.0.0.0/16
-        aws_vpc_public_subnets: 10.10.10.0/24
-        aws_vpc_private_subnets: 10.10.20.0/24
-        aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
-        aws_elb_app_port: 8000,8003,8080
-        aws_elb_listen_port: 8000,8003,80
+        # aws_vpc_create: true
+        # aws_vpc_name: project1-vpc
+        # # aws_vpc_cidr_block: 10.0.0.0/16
+        # aws_vpc_public_subnets: 10.10.10.0/24
+        # aws_vpc_private_subnets: 10.10.20.0/24
+        # aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
+        # aws_elb_app_port: 8000,8003,8080
+        # aws_elb_listen_port: 8000,8003,80
         # aws_elb_healthcheck: "HTTP:8080"
 
         
-        aws_ec2_instance_type: t3.micro
-        aws_ec2_instance_root_vol_size: 8
-        aws_ec2_port_list: 8000,8003,8080
-        aws_ec2_iam_instance_profile: project1-ecr-access
-        docker_repo_app_directory: ./project1/
+        # aws_ec2_instance_type: t3.micro
+        # aws_ec2_instance_root_vol_size: 8
+        # aws_ec2_port_list: 8000,8003,8080
+        # aws_ec2_iam_instance_profile: project1-ecr-access
+        # docker_repo_app_directory: ./project1/
 #        aws_ec2_user_data_file: ./project1/setup.sh
 
 
@@ -114,51 +183,30 @@ jobs:
         # aws_rds_db_multi_az: false
         # aws_rds_db_apply_immediately: true
 
-  #   # - name: Show results
-  #   #   id: show
-  #   #   run: |
-  #   #       echo "${{ steps.deploy.outputs.aws_vpc_id }}"
-  #   #       echo "${{ steps.deploy.outputs.ec2_sg_id }}"
-  #   #       echo "${{ steps.deploy.outputs.db_endpoint }}"
-  #   #       echo "${{ steps.deploy.outputs.instance_endpoint }}"
 
 
-    # - name: configure aws credentials
-    #   uses: aws-actions/configure-aws-credentials@v4
-    #   with:
-    #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    #     aws-region: ${{ secrets.AWS_REGION }}
 
-    # - name: Create SSH Key Pair
-    #   id: create_key
+
+
+
+
+    # - name: Describe EC2 Instance
+    #   id: describe-instance
     #   run: |
-    #     aws ec2 create-key-pair --key-name key --query 'KeyMaterial' --output text > github-action-key.pem
-    #     chmod 400 github-action-key.pem
-    #   env:
-    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-    # - name: Add Key to GitHub Secrets
-    #   run: |
-    #     echo "${{ steps.create_key.outputs.key }}" | gh secret set EC2_SSH_KEY
+    #     # Describe the instance and fetch details
+    #       INSTANCE_DETAILS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=vladskvortsov-mind-master - Instance" --query "Reservations[0].Instances[0]" --output json)
 
-    - name: Describe EC2 Instance
-      id: describe-instance
-      run: |
+    #     # Extract Public IP and Key Name
+    #     PUBLIC_IP=$(echo $INSTANCE_DETAILS | jq -r '.PublicIpAddress')
+    #     KEY_NAME=$(echo $INSTANCE_DETAILS | jq -r '.KeyName')
+    #     echo "Public IP Address: $PUBLIC_IP"
+    #     echo "Key Pair Name: $KEY_NAME"
 
-        # Describe the instance and fetch details
-          INSTANCE_DETAILS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=vladskvortsov-mind-master - Instance" --query "Reservations[0].Instances[0]" --output json)
+    #               echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+    #               echo "KEY_NAME=$KEY_NAME" >> $GITHUB_ENV
 
-        # Extract Public IP and Key Name
-        PUBLIC_IP=$(echo $INSTANCE_DETAILS | jq -r '.PublicIpAddress')
-        KEY_NAME=$(echo $INSTANCE_DETAILS | jq -r '.KeyName')
 
-        echo "Public IP Address: $PUBLIC_IP"
-        echo "Key Pair Name: $KEY_NAME"
-
-                  echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
-                  echo "KEY_NAME=$KEY_NAME" >> $GITHUB_ENV
 
 
     # - name: Deploy on EC2
@@ -170,7 +218,7 @@ jobs:
     #     script: |
     #           cd mind/
     #           apt update 
-    #           apt install unzip
+    #           apt install -y unzip docker
     #           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
     #           unzip awscliv2.zip
     #           ./aws/install 
@@ -178,6 +226,36 @@ jobs:
     #           newgrp docker         
     #           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
     #           docker compose up -d
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -213,89 +291,3 @@ jobs:
         
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  # deploy-vpc:
-  #   runs-on: ubuntu-latest
-  #   outputs: 
-  #     vpc_id: ${{ steps.create_vpc.outputs.vpc_id }}
-  #     public_subnet_id: ${{ steps.create_subnets.outputs.public_subnet_id }}
-  #     private_subnet_id: ${{ steps.create_subnets.outputs.private_subnet_id }}
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v2
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws-region: ${{ secrets.AWS_REGION }}
-          
-  #     - name: Create VPC
-  #       id: create_vpc
-  #       run: |
-  #         VPC_ID=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --query 'Vpc.VpcId' --output text)
-  #         aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-support
-  #         aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-hostnames
-  #         echo "VPC_ID=$VPC_ID" >> $GITHUB_ENV
-  #         echo "vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
-
-
-  #     - name: Create Subnets
-  #       id: create_subnets
-  #       run: |
-  #         PUBLIC_SUBNET_ID=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --cidr-block 10.0.1.0/24 --query 'Subnet.SubnetId' --output text)
-  #         PRIVATE_SUBNET_ID=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --cidr-block 10.0.2.0/24 --query 'Subnet.SubnetId' --output text)
-  #         echo "PUBLIC_SUBNET_ID=$PUBLIC_SUBNET_ID" >> $GITHUB_ENV
-  #         echo "PRIVATE_SUBNET_ID=$PRIVATE_SUBNET_ID" >> $GITHUB_ENV
-  #         echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
-  #         echo "private_subnet_id=$PRIVATE_SUBNET_ID" >> $GITHUB_OUTPUT
-
-  #     - name: Create Internet Gateway and Route Table
-  #       id: create_igw
-  #       run: |
-  #         IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
-  #         aws ec2 attach-internet-gateway --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --internet-gateway-id $IGW_ID
-  #         RT_ID=$(aws ec2 create-route-table --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --query 'RouteTable.RouteTableId' --output text)
-  #         aws ec2 create-route --route-table-id $RT_ID --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW_ID
-  #         aws ec2 associate-route-table --subnet-id ${{ steps.create_subnets.outputs.public_subnet_id }} --route-table-id $RT_ID
-
-  #     - name: Create Security Groups
-  #       id: create_sg
-  #       run: |
-  #         ALB_SG_ID=$(aws ec2 create-security-group --group-name alb-sg --description "Security group for ALB" --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --query 'GroupId' --output text)
-  #         aws ec2 authorize-security-group-ingress --group-id $ALB_SG_ID --protocol tcp --port 80 --cidr 0.0.0.0/0
-  #         aws ec2 authorize-security-group-ingress --group-id $ALB_SG_ID --protocol tcp --port 443 --cidr 0.0.0.0/0
-  #         ECS_SG_ID=$(aws ec2 create-security-group --group-name ecs-sg --description "Security group for ECS" --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --query 'GroupId' --output text)
-  #         aws ec2 authorize-security-group-ingress --group-id $ECS_SG_ID --protocol tcp --port 80 --source-group $ALB_SG_ID
-  #         echo "ecs_sg_id=$ECS_SG_ID" >> $GITHUB_OUTPUT
-  #         echo "alb_sg_id=$ALB_SG_ID" >> $GITHUB_OUTPUT
-
-  #         echo "${{ steps.create_vpc.outputs.vpc_id }}"
-  #         echo "${{ steps.create_subnets.outputs.public_subnet_id }}"
-  #         echo "${{ steps.create_subnets.outputs.private_subnet_id }}"
