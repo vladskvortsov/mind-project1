@@ -60,9 +60,9 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-    - name: Add Key to GitHub Secrets
-      run: |
-        echo "${{ steps.create_key.outputs.key }}" | gh secret set EC2_SSH_KEY
+    # - name: Add Key to GitHub Secrets
+    #   run: |
+    #     echo "${{ steps.create_key.outputs.key }}" | gh secret set EC2_SSH_KEY
 
   
 
