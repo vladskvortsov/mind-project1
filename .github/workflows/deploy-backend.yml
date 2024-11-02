@@ -83,7 +83,7 @@ jobs:
       id: create-ec2
       uses: truemark/aws-ec2-run-instance-action@v5
       with:
-        # security-group-id: "sg-0baf5bcfe9f21efa0"
+        security-group-id: "sg-0f758c546cde934d7"
         subnet-id: "subnet-07de91f807bbe6a48"
         name: project1-backend
         region: ${{ secrets.AWS_REGION }}
