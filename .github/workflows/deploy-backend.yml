@@ -87,7 +87,7 @@ jobs:
         # subnet-id: "subnet-09a35a2abd797dbf0"
         name: project1-backend
         region: ${{ secrets.AWS_REGION }}
-        image-id: "ubuntu-latest"
+        image-id: "default-amd64"
         instance-type: "t3.micro"
         instance-profile: "project1-ecr-access"
         volume-size: 8
