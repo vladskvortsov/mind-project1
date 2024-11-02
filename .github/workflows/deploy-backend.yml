@@ -51,11 +51,16 @@ jobs:
                 aws iam add-role-to-instance-profile --instance-profile-name project1-ecr-access --role-name ecr-pull-role
               fi
 
-    - name: Create SSH Key Pair
+    - name: Check and Create SSH Key Pair if Not Exists
       id: create_key
       run: |
-        aws ec2 create-key-pair --key-name key --query 'KeyMaterial' --output text > github-action-key.pem
-        chmod 400 github-action-key.pem
+        if 
+          aws ec2 describe-key-pairs --key-names key 2>/dev/null; then
+          echo "Key pair 'key' already exists. Skipping creation."
+        else
+          aws ec2 create-key-pair --key-name key --query 'KeyMaterial' --output text > github-action-key.pem
+          chmod 400 github-action-key.pem
+        fi
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
