@@ -113,7 +113,42 @@ jobs:
 
 
 
+   # - name: Describe EC2 Instance
+    #   id: describe-instance
+    #   run: |
 
+    #     # Describe the instance and fetch details
+    #       INSTANCE_DETAILS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=vladskvortsov-mind-master - Instance" --query "Reservations[0].Instances[0]" --output json)
+
+    #     # Extract Public IP and Key Name
+    #     PUBLIC_IP=$(echo $INSTANCE_DETAILS | jq -r '.PublicIpAddress')
+    #     KEY_NAME=$(echo $INSTANCE_DETAILS | jq -r '.KeyName')
+    #     echo "Public IP Address: $PUBLIC_IP"
+    #     echo "Key Pair Name: $KEY_NAME"
+
+    #               echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+    #               echo "KEY_NAME=$KEY_NAME" >> $GITHUB_ENV
+
+
+
+
+    - name: Deploy on EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: 16.16.64.148
+        username: ubuntu
+        key: 
+        script: |
+              cd mind/
+              apt update 
+              apt install -y unzip docker
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip awscliv2.zip
+              ./aws/install 
+              sudo usermod -aG docker $USER
+              newgrp docker         
+              aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+              docker compose up -d
 
 
 
@@ -224,7 +259,7 @@ jobs:
     #   with:
     #     host: 16.16.64.148
     #     username: ubuntu
-    #     key: vladskvortsov-mind-master-ec2kp-nPMRp
+    #     key: 
     #     script: |
     #           cd mind/
     #           apt update 
