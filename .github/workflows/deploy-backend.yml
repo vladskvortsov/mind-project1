@@ -16,6 +16,7 @@ jobs:
       db_sg_id: ${{ steps.deploy.outputs.db_sg_id }}
       db_endpoint: ${{ steps.deploy.outputs.db_endpoint }}
       instance_endpoint: ${{ steps.deploy.outputs.instance_endpoint }}
+      key: ${{ steps.create_key.outputs.key }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -60,12 +61,13 @@ jobs:
         else
           aws ec2 create-key-pair --key-name key --query 'KeyMaterial' --output text > github-action-key.pem
           chmod 400 github-action-key.pem
+          cat github-action-key.pem
         fi
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-    # - name: Add Key to GitHub Secrets
+    # - name: Add Key to GitHub Secrets""
     #   run: |
     #     echo "${{ steps.create_key.outputs.key }}" | gh secret set EC2_SSH_KEY
 
