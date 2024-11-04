@@ -122,35 +122,34 @@ jobs:
           #REDIS_PASSWORD=mypassword
 
           CORS_ALLOWED_ORIGINS=http://d2xytvnh88jebv.cloudfront.net" > vars.env
-          DOCKERCOMPOSE=$(
-          version: '3.8'
-          services:
-            backend_rds:
-              env_file:
-              - vars.env
-              image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
-              container_name: backend_rds
-              ports:
-                - "8000:8000"
-              networks:
-                - backend
-              entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8000"]
 
-            backend_redis:
-              env_file:
-              - vars.env
-              image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
-              container_name: backend_redis
-              ports:
-                - "8003:8003"
-              networks:
-                - backend
-              entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8003"]
+              echo "version: '3.8'
+              services:
+                backend_rds:
+                  env_file:
+                  - vars.env
+                  image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
+                  container_name: backend_rds
+                  ports:
+                    - "8000:8000"
+                  networks:
+                    - backend
+                  entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8000"]
 
-          networks:
-            backend:
-              driver: bridge)
-          echo "$DOCKERCOMPOSE" > docker-compose.yml
+                backend_redis:
+                  env_file:
+                  - vars.env
+                  image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
+                  container_name: backend_redis
+                  ports:
+                    - "8003:8003"
+                  networks:
+                    - backend
+                  entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8003"]
+
+              networks:
+                backend:
+                  driver: bridge" > docker-compose.yml
           docker-compose up -d
 
 
