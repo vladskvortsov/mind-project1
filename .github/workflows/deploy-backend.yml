@@ -59,7 +59,7 @@ jobs:
           aws ec2 describe-key-pairs --key-names key 2>/dev/null; then
           echo "Key pair 'key' already exists. Skipping creation."
         else
-          aws ec2 create-key-pair --key-name key --query 'KeyMaterial' --output text > $KEY_CONTENT
+          KEY_CONTENT=$(aws ec2 create-key-pair --key-name key --query 'KeyMaterial' --output text)
           # chmod 400 github-action-key.pem
           echo "KEY_CONTENT=$KEY_CONTENT" >> $GITHUB_ENV
         fi
