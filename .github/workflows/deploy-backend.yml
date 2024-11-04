@@ -138,7 +138,7 @@ jobs:
       with:
         host: 13.48.193.0
         username: ubuntu
-        key: $KEY_CONTENT
+        key: ${{ steps.create_key.outputs.key_content }}
         script: |
               cd mind/
               apt update 
