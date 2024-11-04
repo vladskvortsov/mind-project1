@@ -94,7 +94,7 @@ jobs:
         user-data: |
           #!/bin/bash
           apt update -y
-          apt install -y unzip docker.io docker-compose git
+          apt install -y unzip docker.io git
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
           ./aws/install
@@ -106,7 +106,7 @@ jobs:
           sudo -u ubuntu aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
           cd /home/ubuntu/
           git clone https://github.com/vladskvortsov/mind.git
-          cd mind/project1/
+          cd mind/
           docker-compose up -d
 
 
