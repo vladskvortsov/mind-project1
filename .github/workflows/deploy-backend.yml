@@ -114,21 +114,21 @@ jobs:
 
 
 
-   # - name: Describe EC2 Instance
-    #   id: describe-instance
-    #   run: |
+    - name: Describe EC2 Instance
+      id: describe-instance
+      run: |
 
-    #     # Describe the instance and fetch details
-    #       INSTANCE_DETAILS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=vladskvortsov-mind-master - Instance" --query "Reservations[0].Instances[0]" --output json)
+        # Describe the instance and fetch details
+          INSTANCE_DETAILS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=project1-backend - Instance" --query "Reservations[0].Instances[0]" --output json)
 
-    #     # Extract Public IP and Key Name
-    #     PUBLIC_IP=$(echo $INSTANCE_DETAILS | jq -r '.PublicIpAddress')
-    #     KEY_NAME=$(echo $INSTANCE_DETAILS | jq -r '.KeyName')
-    #     echo "Public IP Address: $PUBLIC_IP"
-    #     echo "Key Pair Name: $KEY_NAME"
+        # Extract Public IP and Key Name
+        PUBLIC_IP=$(echo $INSTANCE_DETAILS | jq -r '.PublicIpAddress')
+        KEY_NAME=$(echo $INSTANCE_DETAILS | jq -r '.KeyName')
+        echo "Public IP Address: $PUBLIC_IP"
+        echo "Key Pair Name: $KEY_NAME"
 
-    #               echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
-    #               echo "KEY_NAME=$KEY_NAME" >> $GITHUB_ENV
+                  echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+                  echo "KEY_NAME=$KEY_NAME" >> $GITHUB_ENV
 
 
 
@@ -136,7 +136,7 @@ jobs:
     - name: Deploy on EC2
       uses: appleboy/ssh-action@master
       with:
-        host: 13.48.193.0
+        host: $PUBLIC_IP
         username: ubuntu
         key: ${{ steps.create_key.outputs.key_content }}
         script: |
