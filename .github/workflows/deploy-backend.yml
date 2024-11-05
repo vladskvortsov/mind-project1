@@ -46,7 +46,7 @@ jobs:
         # aws_vpc_cidr_block: 10.0.0.0/16
         aws_vpc_public_subnets: 10.10.10.0/24
         aws_vpc_private_subnets: 10.10.20.0/24
-        aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
+        # aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
         aws_elb_create: false
         # aws_elb_app_port: 8000,8003,8080
         # aws_elb_listen_port: 8000,8003,80
