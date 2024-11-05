@@ -17,7 +17,6 @@ jobs:
       db_endpoint: ${{ steps.deploy.outputs.db_endpoint }}
       private_subnet_id: ${{ steps.subnets.outputs.private_subnet_id }}
       public_subnet_id: ${{ steps.subnets.outputs.public_subnet_id }}
-
       # instance_endpoint: ${{ steps.deploy.outputs.instance_endpoint }}
     steps:
     - name: Checkout code
