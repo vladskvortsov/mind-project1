@@ -172,7 +172,7 @@ jobs:
 
 
 
-        
+
 
 
 
@@ -342,7 +342,7 @@ jobs:
           DB_NAME=mydb
           DB_USER=dbuser
           # DB_PASSWORD=mypassword
-          DB_HOST=${{ needs.deploy-rds.outputs.db_endpoint }}
+          DB_HOST=${{ needs.deploy-rds.outputs.rds_endpoint }}
           DB_PORT=5432
 
           REDIS_HOST=${{ needs.deploy-elascticache.outputs.redis_connection_string_secret }}
@@ -386,7 +386,7 @@ jobs:
       run: |
         aws ec2 modify-instance-attribute \
           --instance-id ${{ steps.create-ec2.outputs.instance-id }} \
-          --groups ${{ needs.deploy-rds.outputs.db_sg_id }},${{ needs.deploy-elascticache.outputs.redis_sg_id }},${{ needs.deploy-rds.outputs.ec2_sg_id }}
+          --groups ${{ needs.deploy-vpc.outputs.ec2-security_group_id }},${{ needs.deploy-elascticache.outputs.redis_sg_id }},${{ needs.deploy-vpc.outputs.rds_security_group_id }}
 
 
 
