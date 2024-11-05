@@ -26,6 +26,69 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
 
+    - name: Create setup.sh file
+      run: |
+        cat <<'EOF' > setup.sh
+        apt update -y
+        apt install -y unzip docker.io docker-compose git
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        ./aws/install
+        usermod -aG docker ubuntu
+        systemctl restart docker
+        # newgrp docker
+        sudo -u ubuntu aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+        sudo -u ubuntu aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        sudo -u ubuntu aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+        cd /home/ubuntu/
+        git clone https://github.com/vladskvortsov/mind.git
+        cd mind/project1/
+        echo "SECRET_KEY=my-secret-key
+        DEBUG=False
+
+        DB_NAME=mydb
+        DB_USER=dbuser
+        # DB_PASSWORD=mypassword
+        DB_HOST=${{ steps.deploy.outputs.db_endpoint }}
+        DB_PORT=5432
+
+        REDIS_HOST=redis-0001-001.redis.fljh7y.eun1.cache.amazonaws.com
+        REDIS_PORT=6379
+        REDIS_DB=0
+        #REDIS_PASSWORD=mypassword
+
+        CORS_ALLOWED_ORIGINS=http://d2xytvnh88jebv.cloudfront.net" > vars.env
+
+        echo '
+        services:
+          backend_rds:
+            env_file:
+              - vars.env
+            image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
+            container_name: backend_rds
+            ports:
+              - "8000:8000"
+            networks:
+              - backend
+            entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8000"]
+
+          backend_redis:
+            env_file:
+              - vars.env
+            image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
+            container_name: backend_redis
+            ports:
+              - "8003:8003"
+            networks:
+              - backend
+            entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8003"]
+
+        networks:
+          backend:
+            driver: bridge' > docker-compose.yml
+        docker-compose up -d
+        EOF
+
     - id: deploy
       name: Deploy EC2 and RDS
       uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
@@ -48,25 +111,25 @@ jobs:
         # aws_elb_listen_port: 8000,8003,80
         # # aws_elb_healthcheck: "HTTP:8080"
 
-        
-        # aws_ec2_instance_type: t3.micro
-        # aws_ec2_instance_root_vol_size: 8
-        # aws_ec2_port_list: 8000,8003,8080
-        # aws_ec2_iam_instance_profile: project1-ecr-access
-        # docker_repo_app_directory: ./project1/
-        # aws_ec2_user_data_file: /project1/setup.sh
+        aws_ec2_instance_create: true
+        aws_ec2_instance_type: t3.micro
+        aws_ec2_instance_root_vol_size: 8
+        aws_ec2_port_list: 8000,8003,8080
+        aws_ec2_iam_instance_profile: project1-ecr-access
+        docker_repo_app_directory: ./project1/
+        aws_ec2_user_data_file: setup.sh
 
 
-        aws_rds_db_enable: true        
-        aws_rds_db_name: mydb
-        aws_rds_db_user: dbuser
-        aws_rds_db_engine: postgres
-        aws_rds_db_port: 5432
-        aws_rds_db_allocated_storage: 20
-        aws_rds_db_instance_class: db.t3.micro
-        aws_rds_db_final_snapshot:
-        aws_rds_db_multi_az: false
-        aws_rds_db_apply_immediately: true
+        # aws_rds_db_enable: true        
+        # aws_rds_db_name: mydb
+        # aws_rds_db_user: dbuser
+        # aws_rds_db_engine: postgres
+        # aws_rds_db_port: 5432
+        # aws_rds_db_allocated_storage: 20
+        # aws_rds_db_instance_class: db.t3.micro
+        # aws_rds_db_final_snapshot:
+        # aws_rds_db_multi_az: false
+        # aws_rds_db_apply_immediately: true
 
 
 
@@ -144,82 +207,82 @@ jobs:
   
 
 
-    - name: Setup EC2
-      id: create-ec2
-      uses: truemark/aws-ec2-run-instance-action@v5
-      with:
-        security-group-id: "sg-0f758c546cde934d7"
-        subnet-id: "subnet-07de91f807bbe6a48"
-        name: project1-backend
-        region: ${{ secrets.AWS_REGION }}
-        image-id: "ami-08eb150f611ca277f"
-        instance-type: "t3.micro"
-        instance-profile: "project1-ecr-access"
-        volume-size: 8
-        associate-public-ip-address: true
-        key-name: key
-        terminate-on-post: false
-        user-data: |
-          #!/bin/bash
-          apt update -y
-          apt install -y unzip docker.io docker-compose git
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          ./aws/install
-          usermod -aG docker ubuntu
-          systemctl restart docker
-          # newgrp docker
-          sudo -u ubuntu aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-          sudo -u ubuntu aws configure set aws_secret_access_key  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          sudo -u ubuntu aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-          cd /home/ubuntu/
-          git clone https://github.com/vladskvortsov/mind.git
-          cd mind/project1/
-          echo "SECRET_KEY=my-secret-key
-          DEBUG=False
+    # - name: Setup EC2
+    #   id: create-ec2
+    #   uses: truemark/aws-ec2-run-instance-action@v5
+    #   with:
+    #     security-group-id: "sg-0f758c546cde934d7"
+    #     subnet-id: "subnet-07de91f807bbe6a48"
+    #     name: project1-backend
+    #     region: ${{ secrets.AWS_REGION }}
+    #     image-id: "ami-08eb150f611ca277f"
+    #     instance-type: "t3.micro"
+    #     instance-profile: "project1-ecr-access"
+    #     volume-size: 8
+    #     associate-public-ip-address: true
+    #     key-name: key
+    #     terminate-on-post: false
+    #     user-data: |
+    #       #!/bin/bash
+    #       apt update -y
+    #       apt install -y unzip docker.io docker-compose git
+    #       curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    #       unzip awscliv2.zip
+    #       ./aws/install
+    #       usermod -aG docker ubuntu
+    #       systemctl restart docker
+    #       # newgrp docker
+    #       sudo -u ubuntu aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #       sudo -u ubuntu aws configure set aws_secret_access_key  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #       sudo -u ubuntu aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+    #       cd /home/ubuntu/
+    #       git clone https://github.com/vladskvortsov/mind.git
+    #       cd mind/project1/
+    #       echo "SECRET_KEY=my-secret-key
+    #       DEBUG=False
 
-          DB_NAME=mydb
-          DB_USER=dbuser
-          # DB_PASSWORD=mypassword
-          DB_HOST=${{ steps.deploy.outputs.db_endpoint }}
-          DB_PORT=5432
+    #       DB_NAME=mydb
+    #       DB_USER=dbuser
+    #       # DB_PASSWORD=mypassword
+    #       DB_HOST=${{ steps.deploy.outputs.db_endpoint }}
+    #       DB_PORT=5432
 
-          REDIS_HOST=redis-0001-001.redis.fljh7y.eun1.cache.amazonaws.com
-          REDIS_PORT=6379
-          REDIS_DB=0
-          #REDIS_PASSWORD=mypassword
+    #       REDIS_HOST=redis-0001-001.redis.fljh7y.eun1.cache.amazonaws.com
+    #       REDIS_PORT=6379
+    #       REDIS_DB=0
+    #       #REDIS_PASSWORD=mypassword
 
-          CORS_ALLOWED_ORIGINS=http://d2xytvnh88jebv.cloudfront.net" > vars.env
+    #       CORS_ALLOWED_ORIGINS=http://d2xytvnh88jebv.cloudfront.net" > vars.env
 
-          echo '
-          # version: '3.8'
-          services:
-            backend_rds:
-              env_file:
-              - vars.env
-              image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
-              container_name: backend_rds
-              ports:
-                - "8000:8000"
-              networks:
-                - backend
-              entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8000"]
+    #       echo '
+    #       # version: '3.8'
+    #       services:
+    #         backend_rds:
+    #           env_file:
+    #           - vars.env
+    #           image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
+    #           container_name: backend_rds
+    #           ports:
+    #             - "8000:8000"
+    #           networks:
+    #             - backend
+    #           entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8000"]
 
-            backend_redis:
-              env_file:
-              - vars.env
-              image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
-              container_name: backend_redis
-              ports:
-                - "8003:8003"
-              networks:
-                - backend
-              entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8003"]
+    #         backend_redis:
+    #           env_file:
+    #           - vars.env
+    #           image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
+    #           container_name: backend_redis
+    #           ports:
+    #             - "8003:8003"
+    #           networks:
+    #             - backend
+    #           entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8003"]
 
-          networks:
-            backend:
-              driver: bridge' > docker-compose.yml
-          docker-compose up -d
+    #       networks:
+    #         backend:
+    #           driver: bridge' > docker-compose.yml
+    #       docker-compose up -d
 
 
 
