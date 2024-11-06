@@ -165,7 +165,7 @@ jobs:
           --master-user-password mypassword \
           --vpc-security-group-ids ${{ needs.deploy-vpc.outputs.rds_security_group_id }} \
           --port 5432 \
-          --multi-az false
+          --multi-az "false"
        # --apply-immediately false
 
 
