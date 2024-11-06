@@ -16,6 +16,7 @@ jobs:
       private_subnet_id: ${{ steps.create_vpc.outputs.private_subnet_id }}
       ec2-security_group_id: ${{ steps.create_sg.outputs.ec2-security_group_id }}
       rds_security_group_id: ${{ steps.rds_sg.outputs.rds_security_group_id }}
+      subnet_group_id: ${{ steps.create_vpc.outputs.subnet_group_id }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -56,6 +57,13 @@ jobs:
             --cache-subnet-group-name private \
             --cache-subnet-group-description "Testing" \
             --subnet-ids $PRIVATE_SUBNET_ID
+
+            SUBNET_GROUP_ID=$(aws elasticache describe-cache-subnet-groups \
+            --cache-subnet-group-name private \
+            --query "CacheSubnetGroups[0].CacheSubnetGroupName" \
+            --output text)
+          
+          echo "subnet_group_id=$SUBNET_GROUP_ID" >> $GITHUB_OUTPUT
           else
             # Use the existing VPC ID
             VPC_ID=$EXISTING_VPC_ID
