@@ -178,7 +178,7 @@ jobs:
           --engine postgres \
           --master-username dbuser \
           --master-user-password mypassword \
-          --db-subnet-group-name private \
+          --db-subnet-group-name ${{ needs.deploy-vpc.outputs.subnet_group_id }} \
           --vpc-security-group-ids ${{ needs.deploy-vpc.outputs.rds_security_group_id }} \
           --port 5432 \
           --no-multi-az 
@@ -298,7 +298,7 @@ jobs:
           --cache-node-type cache.t3.micro \
           --num-cache-nodes 1 \
           --port 6379 \
-          --cache-subnet-group-name private \
+          --cache-subnet-group-name ${{ needs.deploy-vpc.outputs.subnet_group_id }} \
           --security-group-ids ${{ needs.deploy-vpc.outputs.rds_security_group_id }} \
           --query "CacheCluster.CacheClusterId" \
           --output text
