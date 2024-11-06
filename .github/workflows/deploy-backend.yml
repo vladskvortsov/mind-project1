@@ -75,6 +75,7 @@ jobs:
         run: |
           SG_ID=$(aws ec2 create-security-group \
             --group-name project1-ec2-sg \
+            --description project1-ec2-sg \
             --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} \
             --query 'GroupId' --output text)
             
@@ -90,6 +91,7 @@ jobs:
         run: |
           RDS_SG_ID=$(aws ec2 create-security-group \
             --group-name rds-sg \
+            --description project1-rds-sg \
             --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} \
             --query 'GroupId' --output text)
           
