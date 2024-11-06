@@ -51,6 +51,11 @@ jobs:
             PRIVATE_SUBNET_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.2.0/24 --availability-zone ${{ secrets.AWS_REGION }}a --query 'Subnet.SubnetId' --output text)
             echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
             echo "private_subnet_id=$PRIVATE_SUBNET_ID" >> $GITHUB_OUTPUT
+
+            aws elasticache create-cache-subnet-group \
+            --cache-subnet-group-name private \
+            --cache-subnet-group-description "Testing" \
+            --subnet-ids $PRIVATE_SUBNET_ID
           else
             # Use the existing VPC ID
             VPC_ID=$EXISTING_VPC_ID
@@ -165,6 +170,7 @@ jobs:
           --engine postgres \
           --master-username dbuser \
           --master-user-password mypassword \
+          --db-subnet-group-name private \
           --vpc-security-group-ids ${{ needs.deploy-vpc.outputs.rds_security_group_id }} \
           --port 5432 \
           --no-multi-az 
@@ -284,6 +290,7 @@ jobs:
           --cache-node-type cache.t3.micro \
           --num-cache-nodes 1 \
           --port 6379 \
+          --cache-subnet-group-name private \
           --security-group-ids ${{ needs.deploy-vpc.outputs.rds_security_group_id }} \
           --query "CacheCluster.CacheClusterId" \
           --output text
