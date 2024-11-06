@@ -249,7 +249,7 @@ jobs:
     needs: deploy-vpc
     outputs:
       redis_connection_string: ${{ steps.endpoint.outputs.redis_connection_string }}
-      redis_sg_id: ${{ steps.create-redis.outputs.redis_sg_id }}
+      # redis_sg_id: ${{ steps.create-redis.outputs.redis_sg_id }}
     steps:
   #   - name: Create a Redis DB
   #     id: create-redis
@@ -278,18 +278,6 @@ jobs:
           --output text 2>/dev/null || echo "None")
 
         if [ "$EXISTING_REDIS" == "None" ]; then
-          echo "create_redis=true" >> $GITHUB_ENV
-        else
-          echo "ElastiCache Redis instance already exists with ID: $EXISTING_REDIS"
-          echo "create_redis=false" >> $GITHUB_ENV
-        fi
-
-    # Step 2: Conditionally Create ElastiCache Redis Instance
-    - name: Create ElastiCache Redis Cluster
-      if: env.create_redis == 'true'
-      id: create-redis
-      run: |
-        REDIS_CLUSTER_ID="mydb"
         
         aws elasticache create-cache-cluster \
           --cache-cluster-id $REDIS_CLUSTER_ID \
@@ -303,21 +291,24 @@ jobs:
           --query "CacheCluster.CacheClusterId" \
           --output text
 
-        echo "redis_cluster_id=$REDIS_CLUSTER_ID" >> $GITHUB_ENV
+          echo "redis_cluster_id=$REDIS_CLUSTER_ID" >> $GITHUB_ENV
+        else
+          echo "ElastiCache Redis instance already exists with ID: $EXISTING_REDIS"
+        fi
+
+        
+
 
     # Step 3: Output ElastiCache Connection String (Optional)
     - name: Output Redis Connection String
       id: endpoint
       run: |
-        if [ "${{ env.create_redis }}" == "true" ]; then
           REDIS_ENDPOINT=$(aws elasticache describe-cache-clusters \
             --cache-cluster-id mydb \
             --query "CacheClusters[0].ConfigurationEndpoint.Address" \
             --output text)
           echo "redis_connection_string=$REDIS_ENDPOINT:6379" >> $GITHUB_OUTPUT
-        else
-          echo "Using existing Redis instance. No connection string change."
-        fi
+
          
   deploy-ec2:
     runs-on: ubuntu-latest
@@ -416,7 +407,7 @@ jobs:
           DB_HOST=${{ needs.deploy-rds.outputs.rds_endpoint }}
           DB_PORT=5432
 
-          REDIS_HOST=${{ needs.deploy-elascticache.outputs.redis_connection_string_secret }}
+          REDIS_HOST=${{ needs.deploy-elascticache.outputs.redis_connection_string }}
           REDIS_PORT=6379
           REDIS_DB=0
           #REDIS_PASSWORD=mypassword
@@ -457,7 +448,7 @@ jobs:
       run: |
         aws ec2 modify-instance-attribute \
           --instance-id ${{ steps.create-ec2.outputs.instance-id }} \
-          --groups ${{ needs.deploy-vpc.outputs.ec2-security_group_id }},${{ needs.deploy-elascticache.outputs.redis_sg_id }},${{ needs.deploy-vpc.outputs.rds_security_group_id }}
+          --groups ${{ needs.deploy-vpc.outputs.ec2-security_group_id }},${{ needs.deploy-vpc.outputs.rds_security_group_id }}
 
 
 
