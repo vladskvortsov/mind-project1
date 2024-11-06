@@ -53,9 +53,15 @@ jobs:
             echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
             echo "private_subnet_id=$PRIVATE_SUBNET_ID" >> $GITHUB_OUTPUT
 
+            SUBNET_GROUP_ID=$(aws elasticache describe-cache-subnet-groups \
+              --cache-subnet-group-name private \
+              --query "CacheSubnetGroups[0].CacheSubnetGroupName" \
+              --output text 2>/dev/null || echo "NOT_FOUND")
+            
+            if [ "$SUBNET_GROUP_ID" = "NOT_FOUND" ]; then
             aws elasticache create-cache-subnet-group \
             --cache-subnet-group-name private \
-            --cache-subnet-group-description "Testing" \
+            --cache-subnet-group-description "private" \
             --subnet-ids $PRIVATE_SUBNET_ID
 
             SUBNET_GROUP_ID=$(aws elasticache describe-cache-subnet-groups \
