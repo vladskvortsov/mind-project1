@@ -8,158 +8,16 @@ on:
   #     - 'project1/backend_redis/*'
   #     - 'project1/backend_rds/*'
 jobs:
-  deploy-vpc:
-    runs-on: ubuntu-latest
-    outputs: 
-      vpc_id: ${{ steps.create_vpc.outputs.vpc_id }}
-      public_subnet_id: ${{ steps.create_vpc.outputs.public_subnet_id }}
-      private_subnet_id: ${{ steps.create_vpc.outputs.private_subnet_id }}
-      ec2-security_group_id: ${{ steps.create_sg.outputs.ec2-security_group_id }}
-      rds_security_group_id: ${{ steps.rds_sg.outputs.rds_security_group_id }}
-      subnet_group_id: ${{ steps.create_vpc.outputs.subnet_group_id }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-          
-      - name: Create VPC
-        id: create_vpc
-        run: |
-          # Check if VPC with the name "project1-vpc" already exists
-          EXISTING_VPC_ID=$(aws ec2 describe-vpcs \
-            --filters "Name=tag:Name,Values=project1-vpc" \
-            --query "Vpcs[0].VpcId" --output text)
-          
-          if [ "$EXISTING_VPC_ID" = "None" ]; then
-            # VPC doesn't exist, so create it
-            VPC_ID=$(aws ec2 create-vpc \
-              --cidr-block 10.0.0.0/16 \
-              --query 'Vpc.VpcId' --output text)
-            
-            # Enable DNS support and DNS hostnames for the VPC
-            aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-support
-            aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-hostnames
-            
-            # Tag the VPC with the name "project1-vpc"
-            aws ec2 create-tags --resources $VPC_ID --tags Key=Name,Value=project1-vpc
-
-            PUBLIC_SUBNET_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.1.0/24 --availability-zone ${{ secrets.AWS_REGION }}a --query 'Subnet.SubnetId' --output text)
-            PRIVATE_SUBNET_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.2.0/24 --availability-zone ${{ secrets.AWS_REGION }}a --query 'Subnet.SubnetId' --output text)
-            echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
-            echo "private_subnet_id=$PRIVATE_SUBNET_ID" >> $GITHUB_OUTPUT
-
-            SUBNET_GROUP_ID=$(aws elasticache describe-cache-subnet-groups \
-              --cache-subnet-group-name private \
-              --query "CacheSubnetGroups[0].CacheSubnetGroupName" \
-              --output text 2>/dev/null || echo "NOT_FOUND")
-            
-            if [ "$SUBNET_GROUP_ID" = "NOT_FOUND" ]; then
-            aws elasticache create-cache-subnet-group \
-            --cache-subnet-group-name private \
-            --cache-subnet-group-description "private" \
-            --subnet-ids $PRIVATE_SUBNET_ID
-            fi
-            SUBNET_GROUP_ID=$(aws elasticache describe-cache-subnet-groups \
-            --cache-subnet-group-name private \
-            --query "CacheSubnetGroups[0].CacheSubnetGroupName" \
-            --output text)
-          
-          echo "subnet_group_id=$SUBNET_GROUP_ID" >> $GITHUB_OUTPUT
-          else
-            # Use the existing VPC ID
-            VPC_ID=$EXISTING_VPC_ID
-          fi
-      
-          echo "vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
-
-
-      # - name: Create Internet Gateway an      # - name: Create Internet Gateway and Route Table
-      #   id: create_igw
-      #   run: |
-      #     IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
-      #     aws ec2 attach-internet-gateway --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --internet-gateway-id $IGW_ID
-      #     RT_ID=$(aws ec2 create-route-table --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --query 'RouteTable.RouteTableId' --output text)
-      #     aws ec2 create-route --route-table-id $RT_ID --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW_ID
-      #     aws ec2 associate-route-table --subnet-id ${{ steps.create_subnets.outputs.public_subnet_id }} --route-table-id $RT_IDd Route Table
-      #   id: create_igw
-      #   run: |
-      #     IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
-      #     aws ec2 attach-internet-gateway --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --internet-gateway-id $IGW_ID
-      #     RT_ID=$(aws ec2 create-route-table --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --query 'RouteTable.RouteTableId' --output text)
-      #     aws ec2 create-route --route-table-id $RT_ID --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW_ID
-      #     aws ec2 associate-route-table --subnet-id ${{ steps.create_subnets.outputs.public_subnet_id }} --route-table-id $RT_ID
-
-      # - name: Create Security Groups
-      #   id: create_sg
-      #   run: |
-      #     # ALB_SG_ID=$(aws ec2 create-security-group --group-name alb-sg --description "Security group for ALB" --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --query 'GroupId' --output text)
-      #     # aws ec2 authorize-security-group-ingress --group-id $ALB_SG_ID --protocol tcp --port 80 --cidr 0.0.0.0/0
-      #     # aws ec2 authorize-security-group-ingress --group-id $ALB_SG_ID --protocol tcp --port 443 --cidr 0.0.0.0/0
-      #     # ECS_SG_ID=$(aws ec2 create-security-group --group-name ecs-sg --description "Security group for ECS" --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --query 'GroupId' --output text)
-      #     # aws ec2 authorize-security-group-ingress --group-id $ECS_SG_ID --protocol tcp --port 80 --source-group $ALB_SG_ID
-      #     # echo "ecs_sg_id=$ECS_SG_ID" >> $GITHUB_OUTPUT
-      #     # echo "alb_sg_id=$ALB_SG_ID" >> $GITHUB_OUTPUT
-
-      - name: Create EC2 Security Group
-        id: create_sg
-        run: |
-          SG_ID=$(aws ec2 create-security-group \
-            --group-name project1-ec2-sg \
-            --description project1-ec2-sg \
-            --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} \
-            --query 'GroupId' --output text)
-            
-          echo "ec2-security_group_id=$SG_ID" >> $GITHUB_OUTPUT
-          aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 8000 --cidr 0.0.0.0/0
-          aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 8003 --cidr 0.0.0.0/0
-          aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 22 --cidr 0.0.0.0/0
-
-      - name: Create RDS Security Group
-        id: rds_sg
-        run: |
-          RDS_SG_ID=$(aws ec2 create-security-group \
-            --group-name rds-sg \
-            --description project1-rds-sg \
-            --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} \
-            --query 'GroupId' --output text)
-          
-          echo "rds_security_group_id=$RDS_SG_ID" >> $GITHUB_OUTPUT
-          aws ec2 authorize-security-group-ingress --group-id $RDS_SG_ID --protocol tcp --port 5432 --cidr 0.0.0.0/0
-          aws ec2 authorize-security-group-ingress --group-id $RDS_SG_ID --protocol tcp --port 6379 --cidr 0.0.0.0/0
-
-
-    # - name: Retrieve Public and Private Subnet IDs
-    #   id: subnets  # Step ID for accessing outputs
-    #   run: |
-    #     ALL_SUBNETS=$(aws ec2 describe-subnets \
-    #       --filters "Name=vpc-id,Values=${{ steps.deploy.outputs.aws_vpc_id }}" \
-    #       --query "Subnets[].[SubnetId, MapPublicIpOnLaunch]" \
-    #       --output json)
-
-    #     # Separate subnets into public and private based on MapPublicIpOnLaunch
-    #       PUBLIC_SUBNET=$(echo $ALL_SUBNETS | jq -r '.[] | select(.[1] == true) | .[0]' | head -n 1)
-    #       PRIVATE_SUBNET=$(echo $ALL_SUBNETS | jq -r '.[] | select(.[1] == false) | .[0]' | head -n 1)
-
-    #     # Store results in environment variables for use in subsequent steps
-    #     echo "public_subnet_id=$PUBLIC_SUBNET" >> $GITHUB_OUTPUT
-    #     echo "private_subnet_id=$PRIVATE_SUBNET" >> $GITHUB_OUTPUT
-
   deploy-rds:
-    runs-on: ubuntu-latest
-    needs: deploy-vpc
-    outputs: 
-      rds_endpoint: ${{ steps.rds_endpoint.outputs.rds_endpoint }}
-      # aws_vpc_id: ${{ steps.deploy.outputs.aws_vpc_id }}
-      # ec2_sg_id: ${{ steps.deploy.outputs.ec2_sg_id }}
-      # db_sg_id: ${{ steps.deploy.outputs.db_sg_id }}
-      # db_endpoint: ${{ steps.deploy.outputs.db_endpoint }}
-      # private_subnet_id: ${{ steps.subnets.outputs.private_subnet_id }}
-      # public_subnet_id: ${{ steps.subnets.outputs.public_subnet_id }}
+    runs-on: ubuntu-latest 
+    outputs:
+      aws_vpc_id: ${{ steps.deploy.outputs.aws_vpc_id }}
+      ec2_sg_id: ${{ steps.deploy.outputs.ec2_sg_id }}
+      db_sg_id: ${{ steps.deploy.outputs.db_sg_id }}
+      db_endpoint: ${{ steps.deploy.outputs.db_endpoint }}
+      private_subnet_id: ${{ steps.subnets.outputs.private_subnet_id }}
+      public_subnet_id: ${{ steps.subnets.outputs.public_subnet_id }}
+
       # instance_endpoint: ${{ steps.deploy.outputs.instance_endpoint }}
     steps:
     - name: Checkout code
@@ -172,166 +30,92 @@ jobs:
         aws-region: ${{ secrets.AWS_REGION }}
 
 
-    - name: Launch RDS Instance
-      id: rds_instance
+    - id: deploy
+      name: Deploy EC2 and RDS
+      uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_default_region: ${{ secrets.AWS_REGION }}
+
+
+        ansible_start_docker_timeout: 600
+
+
+        aws_vpc_create: true
+        aws_vpc_name: project1-vpc
+        # aws_vpc_cidr_block: 10.0.0.0/16
+        aws_vpc_public_subnets: 10.10.10.0/24
+        aws_vpc_private_subnets: 10.10.20.0/24
+        aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
+        aws_elb_create: false
+        # aws_elb_app_port: 8000,8003,8080
+        # aws_elb_listen_port: 8000,8003,80
+        # # aws_elb_healthcheck: "HTTP:8080"
+
+        aws_ec2_instance_create: false
+        # aws_ec2_instance_type: t3.micro
+        # aws_ec2_instance_root_vol_size: 8
+        # aws_ec2_port_list: 8000,8003,8080
+        # aws_ec2_iam_instance_profile: project1-ecr-access
+        # docker_repo_app_directory: ./project1/
+        # aws_ec2_user_data_file: setup.sh
+
+
+        aws_rds_db_enable: true        
+        aws_rds_db_name: mydb
+        aws_rds_db_user: dbuser
+        aws_rds_db_engine: postgres
+        aws_rds_db_port: 5432
+        aws_rds_db_allocated_storage: 20
+        aws_rds_db_instance_class: db.t3.micro
+        aws_rds_db_final_snapshot:
+        aws_rds_db_multi_az: false
+        aws_rds_db_apply_immediately: true
+
+    - name: Retrieve Public and Private Subnet IDs
+      id: subnets  # Step ID for accessing outputs
       run: |
-        
-        aws rds create-db-instance \
-          --db-instance-identifier mydb \
-          --db-name mydb \
-          --allocated-storage 20 \
-          --db-instance-class db.t3.micro \
-          --engine postgres \
-          --master-username dbuser \
-          --master-user-password mypassword \
-          --db-subnet-group-name ${{ needs.deploy-vpc.outputs.subnet_group_id }} \
-          --vpc-security-group-ids ${{ needs.deploy-vpc.outputs.rds_security_group_id }} \
-          --port 5432 \
-          --no-multi-az 
-       # --apply-immediately 
+        ALL_SUBNETS=$(aws ec2 describe-subnets \
+          --filters "Name=vpc-id,Values=${{ steps.deploy.outputs.aws_vpc_id }}" \
+          --query "Subnets[].[SubnetId, MapPublicIpOnLaunch]" \
+          --output json)
 
+        # Separate subnets into public and private based on MapPublicIpOnLaunch
+          PUBLIC_SUBNET=$(echo $ALL_SUBNETS | jq -r '.[] | select(.[1] == true) | .[0]' | head -n 1)
+          PRIVATE_SUBNET=$(echo $ALL_SUBNETS | jq -r '.[] | select(.[1] == false) | .[0]' | head -n 1)
 
-    - name: Retrieve and Output RDS Endpoint
-      id: rds_endpoint
-      run: |
-        DB_ENDPOINT=$(aws rds describe-db-instances \
-          --db-instance-identifier mydb \
-          --query "DBInstances[0].Endpoint.Address" \
-          --output text)
-        
-        echo "rds_endpoint=$DB_ENDPOINT" >> $GITHUB_OUTPUT
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # - id: deploy
-    #   name: Deploy EC2 and RDS
-    #   uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
-    #   with:
-    #     aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    #     aws_default_region: ${{ secrets.AWS_REGION }}
-
-
-    #     ansible_start_docker_timeout: 600
-
-
-    #     aws_vpc_create: true
-    #     aws_vpc_name: project1-vpc
-    #     # aws_vpc_cidr_block: 10.0.0.0/16
-    #     aws_vpc_public_subnets: 10.10.10.0/24
-    #     aws_vpc_private_subnets: 10.10.20.0/24
-    #     aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
-    #     aws_elb_create: false
-    #     # aws_elb_app_port: 8000,8003,8080
-    #     # aws_elb_listen_port: 8000,8003,80
-    #     # # aws_elb_healthcheck: "HTTP:8080"
-
-    #     aws_ec2_instance_create: true
-    #     # aws_ec2_instance_type: t3.micro
-    #     # aws_ec2_instance_root_vol_size: 8
-    #     # aws_ec2_port_list: 8000,8003,8080
-    #     # aws_ec2_iam_instance_profile: project1-ecr-access
-    #     # docker_repo_app_directory: ./project1/
-    #     # aws_ec2_user_data_file: setup.sh
-
-
-    #     aws_rds_db_enable: true        
-    #     aws_rds_db_name: mydb
-    #     aws_rds_db_user: dbuser
-    #     aws_rds_db_engine: postgres
-    #     aws_rds_db_port: 5432
-    #     aws_rds_db_allocated_storage: 20
-    #     aws_rds_db_instance_class: db.t3.micro
-    #     aws_rds_db_final_snapshot:
-    #     aws_rds_db_multi_az: false
-    #     aws_rds_db_apply_immediately: true
-
-
-
+        # Store results in environment variables for use in subsequent steps
+        echo "public_subnet_id=$PUBLIC_SUBNET" >> $GITHUB_OUTPUT
+        echo "private_subnet_id=$PRIVATE_SUBNET" >> $GITHUB_OUTPUT
 
 
   deploy-elascticache:
     runs-on: ubuntu-latest
-    needs: deploy-vpc
+    needs: deploy-rds
     outputs:
-      redis_connection_string: ${{ steps.endpoint.outputs.redis_connection_string }}
-      # redis_sg_id: ${{ steps.create-redis.outputs.redis_sg_id }}
+      redis_connection_string_secret: ${{ steps.create-redis.outputs.redis_connection_string_secret }}
+      redis_sg_id: ${{ steps.create-redis.outputs.redis_sg_id }}
     steps:
-  #   - name: Create a Redis DB
-  #     id: create-redis
-  #     uses: bitovi/github-actions-deploy-redis-db@v0.1.1
-  #     with:
-  #       aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #       aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #       aws_default_region: ${{ secrets.AWS_REGION }}
+    - name: Create a Redis DB
+      id: create-redis
+      uses: bitovi/github-actions-deploy-redis-db@v0.1.1
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_default_region: ${{ secrets.AWS_REGION }}
 
-  #       # aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a
-  #       aws_redis_enable: true
-  #       aws_redis_port: 6379
-  #       aws_redis_multi_az_enabled: false
-  #       aws_redis_apply_immediately: true
-  #       aws_vpc_id: ${{ needs.deploy-vpc.outputs.vpc_id }}
-  #       aws_vpc_subnet_id: ${{ needs.deploy-vpc.outputs.private_subnet_id }}
-  #       aws_redis_allowed_security_groups: ${{ needs.deploy-vpc.outputs.ec2-security_group_id }}
-
-    - name: Check if ElastiCache Redis Instance Exists
-      id: check-redis
-      run: |
-        REDIS_CLUSTER_ID="mydb"
-        EXISTING_REDIS=$(aws elasticache describe-cache-clusters \
-          --cache-cluster-id $REDIS_CLUSTER_ID \
-          --query "CacheClusters[0].CacheClusterId" \
-          --output text 2>/dev/null || echo "None")
-
-        if [ "$EXISTING_REDIS" == "None" ]; then
-        
-        aws elasticache create-cache-cluster \
-          --cache-cluster-id $REDIS_CLUSTER_ID \
-          --engine redis \
-          --cache-node-type cache.t3.micro \
-          --num-cache-nodes 1 \
-          --port 6379 \
-          --cache-subnet-group-name ${{ needs.deploy-vpc.outputs.subnet_group_id }} \
-          --security-group-ids ${{ needs.deploy-vpc.outputs.rds_security_group_id }} \
-          --query "CacheCluster.CacheClusterId" \
-          --output text
-
-          echo "redis_cluster_id=$REDIS_CLUSTER_ID" >> $GITHUB_ENV
-        else
-          echo "ElastiCache Redis instance already exists with ID: $EXISTING_REDIS"
-        fi
-
-        
-
-
-    # Step 3: Output ElastiCache Connection String (Optional)
-    - name: Output Redis Connection String
-      id: endpoint
-      run: |
-          REDIS_ENDPOINT=$(aws elasticache describe-cache-clusters \
-            --cache-cluster-id mydb \
-            --query "CacheClusters[0].ConfigurationEndpoint.Address" \
-            --output text)
-          echo "redis_connection_string=$REDIS_ENDPOINT:6379" >> $GITHUB_OUTPUT
-
+        aws_redis_enable: true
+        aws_redis_port: 6379
+        aws_redis_multi_az_enabled: false
+        aws_redis_apply_immediately: true
+        aws_vpc_id: ${{ needs.deploy-rds.outputs.aws_vpc_id }}
+        aws_vpc_subnet_id: ${{ needs.deploy-rds.outputs.private_subnet_id }}
+        aws_redis_allowed_security_groups: ${{ needs.deploy-rds.outputs.db_sg_id }},sg-0f758c546cde934d7
          
   deploy-ec2:
     runs-on: ubuntu-latest
     needs: 
-     - deploy-vpc
      - deploy-rds
      - deploy-elascticache
     outputs:
@@ -389,8 +173,8 @@ jobs:
       id: create-ec2
       uses: truemark/aws-ec2-run-instance-action@v5
       with:
-        security-group-id: ${{ needs.deploy-vpc.outputs.ec2-security_group_id }}
-        subnet-id: "${{ needs.deploy-vpc.outputs.public_subnet_id }}"
+        security-group-id: ${{ needs.deploy-rds.outputs.ec2_sg_id }}
+        subnet-id: "${{ needs.deploy-rds.outputs.public_subnet_id }}"
         name: project1-backend
         region: ${{ secrets.AWS_REGION }}
         image-id: "ami-08eb150f611ca277f"
@@ -421,11 +205,11 @@ jobs:
 
           DB_NAME=mydb
           DB_USER=dbuser
-          DB_PASSWORD=mypassword
-          DB_HOST=${{ needs.deploy-rds.outputs.rds_endpoint }}
+          # DB_PASSWORD=mypassword
+          DB_HOST=${{ needs.deploy-rds.outputs.db_endpoint }}
           DB_PORT=5432
 
-          REDIS_HOST=${{ needs.deploy-elascticache.outputs.redis_connection_string }}
+          REDIS_HOST=${{ needs.deploy-elascticache.outputs.redis_connection_string_secret }}
           REDIS_PORT=6379
           REDIS_DB=0
           #REDIS_PASSWORD=mypassword
@@ -466,7 +250,7 @@ jobs:
       run: |
         aws ec2 modify-instance-attribute \
           --instance-id ${{ steps.create-ec2.outputs.instance-id }} \
-          --groups ${{ needs.deploy-vpc.outputs.ec2-security_group_id }},${{ needs.deploy-vpc.outputs.rds_security_group_id }}
+          --groups ${{ needs.deploy-rds.outputs.db_sg_id }},${{ needs.deploy-elascticache.outputs.redis_sg_id }},${{ needs.deploy-rds.outputs.ec2_sg_id }}
 
 
 
@@ -498,4 +282,3 @@ jobs:
 
 
         
-
