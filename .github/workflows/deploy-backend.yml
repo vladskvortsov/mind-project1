@@ -285,9 +285,8 @@ jobs:
           --cache-node-type cache.t3.micro \
           --num-cache-nodes 1 \
           --port 6379 \
-          --vpc-security-group-ids ${{ needs.deploy-vpc.outputs.rds_security_group_id }} \
+          --security-group-ids ${{ needs.deploy-vpc.outputs.rds_security_group_id }} \
           --cache-subnet-group-name ${{ needs.deploy-vpc.outputs.private_subnet_id }} \
-          --apply-immediately \
           --query "CacheCluster.CacheClusterId" \
           --output text
 
