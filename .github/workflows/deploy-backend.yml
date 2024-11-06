@@ -215,7 +215,7 @@ jobs:
           #REDIS_PASSWORD=mypassword
 
           CORS_ALLOWED_ORIGINS=http://d2xytvnh88jebv.cloudfront.net" > vars.env
-
+ 
           echo '
           # version: '3.8'
           services:
