@@ -63,7 +63,7 @@ jobs:
             --cache-subnet-group-name private \
             --cache-subnet-group-description "private" \
             --subnet-ids $PRIVATE_SUBNET_ID
-
+            fi
             SUBNET_GROUP_ID=$(aws elasticache describe-cache-subnet-groups \
             --cache-subnet-group-name private \
             --query "CacheSubnetGroups[0].CacheSubnetGroupName" \
