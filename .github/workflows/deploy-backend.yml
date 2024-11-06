@@ -111,6 +111,8 @@ jobs:
           
           echo "rds_security_group_id=$RDS_SG_ID" >> $GITHUB_OUTPUT
           aws ec2 authorize-security-group-ingress --group-id $RDS_SG_ID --protocol tcp --port 5432 --cidr 0.0.0.0/0
+          aws ec2 authorize-security-group-ingress --group-id $RDS_SG_ID --protocol tcp --port 6379 --cidr 0.0.0.0/0
+
 
     # - name: Retrieve Public and Private Subnet IDs
     #   id: subnets  # Step ID for accessing outputs
@@ -246,25 +248,76 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy-vpc
     outputs:
-      redis_connection_string_secret: ${{ steps.create-redis.outputs.redis_connection_string_secret }}
+      redis_connection_string: ${{ steps.endpoint.outputs.redis_connection_string }}
       redis_sg_id: ${{ steps.create-redis.outputs.redis_sg_id }}
     steps:
-    - name: Create a Redis DB
-      id: create-redis
-      uses: bitovi/github-actions-deploy-redis-db@v0.1.1
-      with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws_default_region: ${{ secrets.AWS_REGION }}
+  #   - name: Create a Redis DB
+  #     id: create-redis
+  #     uses: bitovi/github-actions-deploy-redis-db@v0.1.1
+  #     with:
+  #       aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #       aws_default_region: ${{ secrets.AWS_REGION }}
 
-        # aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a
-        aws_redis_enable: true
-        aws_redis_port: 6379
-        aws_redis_multi_az_enabled: false
-        aws_redis_apply_immediately: true
-        aws_vpc_id: ${{ needs.deploy-vpc.outputs.vpc_id }}
-        aws_vpc_subnet_id: ${{ needs.deploy-vpc.outputs.private_subnet_id }}
-        aws_redis_allowed_security_groups: ${{ needs.deploy-vpc.outputs.ec2-security_group_id }}
+  #       # aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a
+  #       aws_redis_enable: true
+  #       aws_redis_port: 6379
+  #       aws_redis_multi_az_enabled: false
+  #       aws_redis_apply_immediately: true
+  #       aws_vpc_id: ${{ needs.deploy-vpc.outputs.vpc_id }}
+  #       aws_vpc_subnet_id: ${{ needs.deploy-vpc.outputs.private_subnet_id }}
+  #       aws_redis_allowed_security_groups: ${{ needs.deploy-vpc.outputs.ec2-security_group_id }}
+
+    - name: Check if ElastiCache Redis Instance Exists
+      id: check-redis
+      run: |
+        REDIS_CLUSTER_ID="mydb"
+        EXISTING_REDIS=$(aws elasticache describe-cache-clusters \
+          --cache-cluster-id $REDIS_CLUSTER_ID \
+          --query "CacheClusters[0].CacheClusterId" \
+          --output text 2>/dev/null || echo "None")
+
+        if [ "$EXISTING_REDIS" == "None" ]; then
+          echo "create_redis=true" >> $GITHUB_ENV
+        else
+          echo "ElastiCache Redis instance already exists with ID: $EXISTING_REDIS"
+          echo "create_redis=false" >> $GITHUB_ENV
+        fi
+
+    # Step 2: Conditionally Create ElastiCache Redis Instance
+    - name: Create ElastiCache Redis Cluster
+      if: env.create_redis == 'true'
+      id: create-redis
+      run: |
+        REDIS_CLUSTER_ID="mydb"
+        
+        aws elasticache create-cache-cluster \
+          --cache-cluster-id $REDIS_CLUSTER_ID \
+          --engine redis \
+          --cache-node-type cache.t3.micro \
+          --num-cache-nodes 1 \
+          --port 6379 \
+          --vpc-security-group-ids ${{ needs.deploy-vpc.outputs.rds_security_group_id }} \
+          --cache-subnet-group-name ${{ needs.deploy-vpc.outputs.private_subnet_id }} \
+          --apply-immediately \
+          --query "CacheCluster.CacheClusterId" \
+          --output text
+
+        echo "redis_cluster_id=$REDIS_CLUSTER_ID" >> $GITHUB_ENV
+
+    # Step 3: Output ElastiCache Connection String (Optional)
+    - name: Output Redis Connection String
+      id: endpoint
+      run: |
+        if [ "${{ env.create_redis }}" == "true" ]; then
+          REDIS_ENDPOINT=$(aws elasticache describe-cache-clusters \
+            --cache-cluster-id mydb \
+            --query "CacheClusters[0].ConfigurationEndpoint.Address" \
+            --output text)
+          echo "redis_connection_string=$REDIS_ENDPOINT:6379" >> $GITHUB_OUTPUT
+        else
+          echo "Using existing Redis instance. No connection string change."
+        fi
          
   deploy-ec2:
     runs-on: ubuntu-latest
