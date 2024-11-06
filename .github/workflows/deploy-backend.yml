@@ -46,6 +46,11 @@ jobs:
             
             # Tag the VPC with the name "project1-vpc"
             aws ec2 create-tags --resources $VPC_ID --tags Key=Name,Value=project1-vpc
+
+            PUBLIC_SUBNET_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.1.0/24 --availability-zone ${{ secrets.AWS_REGION }}a --query 'Subnet.SubnetId' --output text)
+            PRIVATE_SUBNET_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.2.0/24 --availability-zone ${{ secrets.AWS_REGION }}a --query 'Subnet.SubnetId' --output text)
+            echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
+            echo "private_subnet_id=$PRIVATE_SUBNET_ID" >> $GITHUB_OUTPUT
           else
             # Use the existing VPC ID
             VPC_ID=$EXISTING_VPC_ID
@@ -53,14 +58,6 @@ jobs:
       
           echo "vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
 
-
-      - name: Create Subnets
-        id: create_subnets
-        run: |
-          PUBLIC_SUBNET_ID=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --cidr-block 10.0.1.0/24 --availability-zone ${{ secrets.AWS_REGION }}a --query 'Subnet.SubnetId' --output text)
-          PRIVATE_SUBNET_ID=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --cidr-block 10.0.2.0/24 --availability-zone ${{ secrets.AWS_REGION }}a --query 'Subnet.SubnetId' --output text)
-          echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
-          echo "private_subnet_id=$PRIVATE_SUBNET_ID" >> $GITHUB_OUTPUT
 
       # - name: Create Internet Gateway an      # - name: Create Internet Gateway and Route Table
       #   id: create_igw
