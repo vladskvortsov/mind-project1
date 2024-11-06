@@ -29,9 +29,28 @@ jobs:
       - name: Create VPC
         id: create_vpc
         run: |
-          VPC_ID=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --query 'Vpc.VpcId' --output text)
-          aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-support
-          aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-hostnames
+          # Check if VPC with the name "project1-vpc" already exists
+          EXISTING_VPC_ID=$(aws ec2 describe-vpcs \
+            --filters "Name=tag:Name,Values=project1-vpc" \
+            --query "Vpcs[0].VpcId" --output text)
+          
+          if [ "$EXISTING_VPC_ID" = "None" ]; then
+            # VPC doesn't exist, so create it
+            VPC_ID=$(aws ec2 create-vpc \
+              --cidr-block 10.0.0.0/16 \
+              --query 'Vpc.VpcId' --output text)
+            
+            # Enable DNS support and DNS hostnames for the VPC
+            aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-support
+            aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-hostnames
+            
+            # Tag the VPC with the name "project1-vpc"
+            aws ec2 create-tags --resources $VPC_ID --tags Key=Name,Value=project1-vpc
+          else
+            # Use the existing VPC ID
+            VPC_ID=$EXISTING_VPC_ID
+          fi
+      
           echo "vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
 
 
@@ -80,8 +99,6 @@ jobs:
             --query 'GroupId' --output text)
             
           echo "ec2-security_group_id=$SG_ID" >> $GITHUB_OUTPUT
-          echo "SG_ID=$SG_ID" >> $GITHUB_ENV
-
           aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 8000 --cidr 0.0.0.0/0
           aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 8003 --cidr 0.0.0.0/0
           aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 22 --cidr 0.0.0.0/0
