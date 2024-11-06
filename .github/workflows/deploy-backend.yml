@@ -57,8 +57,8 @@ jobs:
       - name: Create Subnets
         id: create_subnets
         run: |
-          PUBLIC_SUBNET_ID=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --cidr-block 10.0.1.0/24 --query 'Subnet.SubnetId' --output text)
-          PRIVATE_SUBNET_ID=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --cidr-block 10.0.2.0/24 --query 'Subnet.SubnetId' --output text)
+          PUBLIC_SUBNET_ID=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --cidr-block 10.0.1.0/24 --availability-zone ${{ secrets.AWS_REGION }}a --query 'Subnet.SubnetId' --output text)
+          PRIVATE_SUBNET_ID=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.vpc_id }} --cidr-block 10.0.2.0/24 --availability-zone ${{ secrets.AWS_REGION }}a --query 'Subnet.SubnetId' --output text)
           echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
           echo "private_subnet_id=$PRIVATE_SUBNET_ID" >> $GITHUB_OUTPUT
 
@@ -165,7 +165,7 @@ jobs:
           --db-instance-class db.t3.micro \
           --engine postgres \
           --master-username dbuser \
-        #  --master-user-password mypassword \
+          --master-user-password mypassword \
           --vpc-security-group-ids ${{ needs.deploy-vpc.outputs.rds_security_group_id }} \
           --port 5432 \
           --multi-az false \
@@ -360,7 +360,7 @@ jobs:
 
           DB_NAME=mydb
           DB_USER=dbuser
-          # DB_PASSWORD=mypassword
+          DB_PASSWORD=mypassword
           DB_HOST=${{ needs.deploy-rds.outputs.rds_endpoint }}
           DB_PORT=5432
 
