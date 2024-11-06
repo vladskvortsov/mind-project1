@@ -256,7 +256,7 @@ jobs:
         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws_default_region: ${{ secrets.AWS_REGION }}
 
-        aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a
+        # aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a
         aws_redis_enable: true
         aws_redis_port: 6379
         aws_redis_multi_az_enabled: false
