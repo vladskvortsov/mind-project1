@@ -196,7 +196,7 @@ jobs:
                     --query "Distribution.Id" --output text)
                       fi
                       echo "aws_distribution_id=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
-                      echo "${{ steps.create_cloudfront.outputs.aws_distribution_id }}"
+
         # echo "$(aws cloudfront get-distribution-config --id E2HDCGYCPFSX9R)"
       # Step 3: Set S3 bucket policy to allow CloudFront access
       - name: Set S3 bucket policy to allow CloudFront access

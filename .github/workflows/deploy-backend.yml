@@ -70,6 +70,9 @@ jobs:
       #   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 
+
+      
+
     - id: deploy
       name: Deploy EC2 and RDS
       uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
