@@ -2,10 +2,7 @@
 AWS_ACCESS_KEY_ID=$1
 
 apt update -y
-apt install -y unzip docker.io docker-compose git
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-./aws/install
+apt install -y unzip docker.io docker-compose git awscli
 usermod -aG docker ubuntu
 systemctl restart docker
 # newgrp docker

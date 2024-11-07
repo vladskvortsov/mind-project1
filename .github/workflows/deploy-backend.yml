@@ -102,7 +102,8 @@ jobs:
         aws_ec2_port_list: 8000,8003,8080
         aws_ec2_iam_instance_profile: project1-ecr-access
         docker_repo_app_directory: ./project1/
-        aws_ec2_user_data_file: /project1/setup.sh ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_ec2_user_data_file: /project1/setup.sh
+        #  ${{ secrets.AWS_ACCESS_KEY_ID }}
 
 
         aws_rds_db_enable: true        
@@ -115,6 +116,9 @@ jobs:
         aws_rds_db_final_snapshot:
         aws_rds_db_multi_az: false
         aws_rds_db_apply_immediately: true
+
+# tf_stack_destroy: true
+# tf_state_bucket_destroy: true
 
     - name: Retrieve Public and Private Subnet IDs
       id: subnets  # Step ID for accessing outputs
