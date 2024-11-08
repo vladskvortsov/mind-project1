@@ -174,7 +174,7 @@ jobs:
         aws_ec2_port_list: 8000,8003,8080
         aws_ec2_iam_instance_profile: project1-ecr-access
         docker_repo_app_directory: ./project1/
-        aws_ec2_user_data_file: setup-test.sh $AWS_ACCESS_KEY_ID
+        aws_ec2_user_data_file: setup-test.sh
         # aws_ec2_create_keypair_sm: true
 
         aws_rds_db_enable: true        
