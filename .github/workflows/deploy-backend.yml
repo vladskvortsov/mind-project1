@@ -139,7 +139,7 @@ jobs:
               driver: bridge' > docker-compose.yml
           
           docker-compose up -d
-          " > /setup.sh
+          " > ${{ github.workspace }}/setup.sh
           chmod 777 ${{ github.workspace }}/setup.sh
           echo "$(cat ${{ github.workspace }}/setup.sh)"
 
