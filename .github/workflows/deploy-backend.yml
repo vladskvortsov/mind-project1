@@ -228,7 +228,7 @@ jobs:
     - name: Export ENV from AWS SecretManager
       id: export-key
       run: |
-          PRIVATE_SSH_KEY=$(echo "$PRIVATE_KEY" | jq -r '.private_key')
+          PRIVATE_SSH_KEY=$(echo "$PRIVATE_KEY" | jq -r '.[] | select(.key == "private_key") | .value')
           echo "$PRIVATE_SSH_KEY"
 
 
