@@ -220,7 +220,7 @@ jobs:
       uses: bitovi/github-actions-aws-secrets-manager@v2.1.0
       with:
         secrets: |
-          *vladskvortsov-mind-master-sm*
+          vladskvortsov-mind-master-sm*
         parse-json: true
 
     - name: Check if env variable is set after fetching secrets
@@ -245,7 +245,7 @@ jobs:
       with:
         host: 13.60.209.66
         username: ubuntu
-        key: $PRIVATE_KEY
+        key: $VLADSKVORTSOV_MIND_MASTER_SM_KNBYK
         script: |
               cd mind/
               apt update 
