@@ -17,6 +17,7 @@ jobs:
       db_endpoint: ${{ steps.deploy.outputs.db_endpoint }}
       private_subnet_id: ${{ steps.subnets.outputs.private_subnet_id }}
       public_subnet_id: ${{ steps.subnets.outputs.public_subnet_id }}
+      ssh_private_key: ${{ steps.export-key.outputs.ssh_private_key }}
 
       # instance_endpoint: ${{ steps.deploy.outputs.instance_endpoint }}
 
@@ -216,8 +217,13 @@ jobs:
         SECRET_NAME: vladskvortsov-mind-master-sm-kNByk
       
     - name: Export ENV from AWS SecretManager
-      run: echo "$asm_secret"
+      id: export-key
+      run: |
+         echo "ssh_private_key=$asm_secret" >> $GITHUB_OUTPUT
 
+    - name: Export ENV
+      run: |
+         echo "${{ steps.export-key.outputs.ssh_private_key }}"
 
   deploy-elascticache:
     runs-on: ubuntu-latest
