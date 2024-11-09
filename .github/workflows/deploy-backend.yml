@@ -238,7 +238,7 @@ jobs:
       with:
         host: 13.60.209.66
         username: ubuntu
-        key: $VLADSKVORTSOV_MIND_MASTER_SM_KNBYK
+        key: $PRIVATE_KEY
         script: |
               cd mind/
               apt update 
