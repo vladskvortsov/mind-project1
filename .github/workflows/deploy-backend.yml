@@ -216,26 +216,19 @@ jobs:
     #     SECRET_NAME: vladskvortsov-mind-master-sm-kNByk
     #     OUTPUT_PATH: 'key.env'
 
-    - name: Read secrets from AWS Secrets Manager into environment variables
-      uses: bitovi/github-actions-aws-secrets-manager@v2.1.0
+    - name: SM
+      uses: aws-actions/aws-secretsmanager-get-secrets@v2
       with:
-        secrets: |
-          vladskvortsov-mind-master-sm*
-        parse-json: true
-
-    - name: Check if env variable is set after fetching secrets
-      run: |
-        if [ -z ${PRIVATE_KEY+x} ]; then echo "MY_SECRET_1 is unset"; else echo "MY_SECRET_1 is set to '$MY_SECRET_1'"; fi
-        echo "$VLADSKVORTSOV_MIND_MASTER_SM_KNBYK"
+        secret-ids: |
+          PRIVATE_KEY, vladskvortsov-mind-master-sm*
+        name-transformation: uppercase
+        parse-json-secrets: true
 
   
-    # - name: Export ENV from AWS SecretManager
-    #   id: export-key
-    #   run: |
-    #       set -a
-    #       source key.env
-    #       set +a
-    #       echo "$PRIVATE_KEY"
+    - name: Export ENV from AWS SecretManager
+      id: export-key
+      run: |
+          echo "$PRIVATE_KEY"
 
 
          
