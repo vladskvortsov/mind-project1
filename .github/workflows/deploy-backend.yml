@@ -219,11 +219,11 @@ jobs:
     - name: Export ENV from AWS SecretManager
       id: export-key
       run: |
-         echo "ssh_private_key=$asm_secret" >> $GITHUB_OUTPUT
+         echo "KEY=$asm_secret" >> $GITHUB_ENV
 
     - name: Export ENV
       run: |
-         echo "${{ steps.export-key.outputs.ssh_private_key }}"
+         echo "$KEY"
 
   deploy-elascticache:
     runs-on: ubuntu-latest
