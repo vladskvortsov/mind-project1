@@ -220,11 +220,11 @@ jobs:
     - name: Export ENV from AWS SecretManager
       id: export-key
       run: |
-         echo 'KEY=$asm_secret' >> $GITHUB_ENV
+         echo "KEY=$(cat key.env)" >> $GITHUB_ENV
 
     - name: Export ENV
       run: |
-         echo "$(cat key.env)"
+         echo "$KEY"
          
 
     - name: Deploy on EC2
@@ -232,7 +232,7 @@ jobs:
       with:
         host: 13.60.209.66
         username: ubuntu
-        key: $asm_secret
+        key: $KEY
         script: |
               cd mind/
               apt update 
