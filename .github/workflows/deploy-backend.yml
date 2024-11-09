@@ -145,48 +145,48 @@ jobs:
 
 
 
-    - id: deploy
-      name: Deploy EC2 and RDS
-      uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
-      with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws_default_region: ${{ secrets.AWS_REGION }}
+    # - id: deploy
+    #   name: Deploy EC2 and RDS
+    #   uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
+    #   with:
+    #     aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #     aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #     aws_default_region: ${{ secrets.AWS_REGION }}
 
 
-        ansible_start_docker_timeout: 600
+    #     ansible_start_docker_timeout: 600
 
 
-        aws_vpc_create: true
-        aws_vpc_name: project1-vpc
-        # aws_vpc_cidr_block: 10.0.0.0/16
-        aws_vpc_public_subnets: 10.10.10.0/24,10.10.40.0/24
-        aws_vpc_private_subnets: 10.10.20.0/24,10.10.30.0/24
-        aws_vpc_availability_zones:  ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
-        aws_elb_create: false
-        # aws_elb_app_port: 8000,8003,8080
-        # aws_elb_listen_port: 8000,8003,80
-        # # aws_elb_healthcheck: "HTTP:8080"
+    #     aws_vpc_create: true
+    #     aws_vpc_name: project1-vpc
+    #     # aws_vpc_cidr_block: 10.0.0.0/16
+    #     aws_vpc_public_subnets: 10.10.10.0/24,10.10.40.0/24
+    #     aws_vpc_private_subnets: 10.10.20.0/24,10.10.30.0/24
+    #     aws_vpc_availability_zones:  ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
+    #     aws_elb_create: false
+    #     # aws_elb_app_port: 8000,8003,8080
+    #     # aws_elb_listen_port: 8000,8003,80
+    #     # # aws_elb_healthcheck: "HTTP:8080"
 
-        aws_ec2_instance_create: true
-        aws_ec2_instance_type: t3.micro
-        aws_ec2_instance_root_vol_size: 8
-        aws_ec2_port_list: 8000,8003,8080
-        aws_ec2_iam_instance_profile: project1-ecr-access
-        docker_repo_app_directory: ./project1/
-        aws_ec2_user_data_file: ${{ github.workspace }}/setup.sh
-        aws_ec2_create_keypair_sm: true
+    #     aws_ec2_instance_create: true
+    #     aws_ec2_instance_type: t3.micro
+    #     aws_ec2_instance_root_vol_size: 8
+    #     aws_ec2_port_list: 8000,8003,8080
+    #     aws_ec2_iam_instance_profile: project1-ecr-access
+    #     docker_repo_app_directory: ./project1/
+    #     aws_ec2_user_data_file: ${{ github.workspace }}/setup.sh
+    #     aws_ec2_create_keypair_sm: true
 
-        aws_rds_db_enable: true        
-        aws_rds_db_name: mydb
-        aws_rds_db_user: dbuser
-        aws_rds_db_engine: postgres
-        aws_rds_db_port: 5432
-        aws_rds_db_allocated_storage: 20
-        aws_rds_db_instance_class: db.t3.micro
-        aws_rds_db_final_snapshot:
-        aws_rds_db_multi_az: false
-        aws_rds_db_apply_immediately: true
+    #     aws_rds_db_enable: true        
+    #     aws_rds_db_name: mydb
+    #     aws_rds_db_user: dbuser
+    #     aws_rds_db_engine: postgres
+    #     aws_rds_db_port: 5432
+    #     aws_rds_db_allocated_storage: 20
+    #     aws_rds_db_instance_class: db.t3.micro
+    #     aws_rds_db_final_snapshot:
+    #     aws_rds_db_multi_az: false
+    #     aws_rds_db_apply_immediately: true
 
 # tf_stack_destroy: true
 # tf_state_bucket_destroy: true
@@ -207,32 +207,6 @@ jobs:
         echo "public_subnet_id=$PUBLIC_SUBNET" >> $GITHUB_OUTPUT
         echo "private_subnet_id=$PRIVATE_SUBNET" >> $GITHUB_OUTPUT
 
-
-  deploy-elascticache:
-    runs-on: ubuntu-latest
-    needs: deploy-rds
-    outputs:
-      redis_connection_string_secret: ${{ steps.create-redis.outputs.redis_connection_string_secret }}
-      redis_sg_id: ${{ steps.create-redis.outputs.redis_sg_id }}
-    steps:
-    - name: Create a Redis DB
-      id: create-redis
-      uses: bitovi/github-actions-deploy-redis-db@v0.1.1
-      with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws_default_region: ${{ secrets.AWS_REGION }}
-
-        aws_redis_enable: true
-        aws_redis_port: 6379
-        aws_redis_multi_az_enabled: false
-        aws_redis_apply_immediately: true
-        aws_vpc_id: ${{ needs.deploy-rds.outputs.aws_vpc_id }}
-        aws_vpc_subnet_id: ${{ needs.deploy-rds.outputs.private_subnet_id }}
-        aws_redis_allowed_security_groups: ${{ needs.deploy-rds.outputs.ec2_sg_id }}
-  
-
-
     - name: AWS SSM Send-Command
       uses: peterkimzz/aws-ssm-send-command@master
       id: ssm
@@ -240,7 +214,7 @@ jobs:
         aws-region: ${{ secrets.AWS_REGION }}
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        instance-ids: ${{ secrets.INSTANCE_ID }}
+        instance-ids: i-083604d67c3c4f4bf
 
         working-directory: /home/ubuntu/mind
         command: |
@@ -300,6 +274,31 @@ jobs:
             backend:
               driver: bridge' > docker-compose.yml
           docker-compose up -d
+
+  deploy-elascticache:
+    runs-on: ubuntu-latest
+    needs: deploy-rds
+    outputs:
+      redis_connection_string_secret: ${{ steps.create-redis.outputs.redis_connection_string_secret }}
+      redis_sg_id: ${{ steps.create-redis.outputs.redis_sg_id }}
+    steps:
+    - name: Create a Redis DB
+      id: create-redis
+      uses: bitovi/github-actions-deploy-redis-db@v0.1.1
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_default_region: ${{ secrets.AWS_REGION }}
+
+        aws_redis_enable: true
+        aws_redis_port: 6379
+        aws_redis_multi_az_enabled: false
+        aws_redis_apply_immediately: true
+        aws_vpc_id: ${{ needs.deploy-rds.outputs.aws_vpc_id }}
+        aws_vpc_subnet_id: ${{ needs.deploy-rds.outputs.private_subnet_id }}
+        aws_redis_allowed_security_groups: ${{ needs.deploy-rds.outputs.ec2_sg_id }}
+  
+
 
   
   # deploy-ec2:
