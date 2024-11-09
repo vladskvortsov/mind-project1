@@ -226,7 +226,7 @@ jobs:
     - name: Check if env variable is set after fetching secrets
       run: |
         if [ -z ${PRIVATE_KEY+x} ]; then echo "MY_SECRET_1 is unset"; else echo "MY_SECRET_1 is set to '$MY_SECRET_1'"; fi
-        echo "$$VLADSKVORTSOV_MIND_MASTER_SM_KNBYK"
+        echo "$VLADSKVORTSOV_MIND_MASTER_SM_KNBYK"
 
   
     # - name: Export ENV from AWS SecretManager
