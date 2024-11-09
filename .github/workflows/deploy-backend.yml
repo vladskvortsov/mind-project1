@@ -228,6 +228,7 @@ jobs:
         if [ -z ${PRIVATE_KEY+x} ]; then echo "MY_SECRET_1 is unset"; else echo "MY_SECRET_1 is set to '$MY_SECRET_1'"; fi
         echo "$PRIVATE_KEY"
 
+  
     # - name: Export ENV from AWS SecretManager
     #   id: export-key
     #   run: |
