@@ -220,11 +220,12 @@ jobs:
     - name: Export ENV from AWS SecretManager
       id: export-key
       run: |
-         echo "KEY=$(cat key.env)"
+          set -a
+          source key.env
+          set +a
+          echo "$PRIVATE_KEY"
 
-    - name: Export ENV
-      run: |
-         echo "$KEY"
+
          
 
     - name: Deploy on EC2
@@ -232,7 +233,7 @@ jobs:
       with:
         host: 13.60.209.66
         username: ubuntu
-        key: $KEY
+        key: $PRIVATE_KEY
         script: |
               cd mind/
               apt update 
