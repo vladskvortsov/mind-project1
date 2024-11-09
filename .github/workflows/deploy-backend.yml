@@ -218,7 +218,7 @@ jobs:
     - name: Export ENV from AWS SecretManager
       id: export-key
       run: |
-         echo "KEY=$asm_secret" >> $GITHUB_ENV
+         echo 'KEY=$asm_secret' >> $GITHUB_ENV
 
     - name: Export ENV
       run: |
