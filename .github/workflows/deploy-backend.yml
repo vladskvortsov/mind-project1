@@ -192,6 +192,7 @@ jobs:
 # tf_state_bucket_destroy: true
 
     - name: Retrieve Public and Private Subnet IDs
+      # if: always() 
       id: subnets  # Step ID for accessing outputs
       run: |
         ALL_SUBNETS=$(aws ec2 describe-subnets \
@@ -228,6 +229,8 @@ jobs:
     - name: Export ENV from AWS SecretManager
       id: export-key
       run: |
+          echo "$PRIVATE_KEY" | jq . # This will help verify if JSON is valid
+
           JSON_FIXED=$(echo "$PRIVATE_KEY" | sed ':a;N;$!ba;s/\n/\\n/g')
           PRIVATE_SSH_KEY=$(echo "$JSON_FIXED" | jq -r '.[] | select(.key == "private_key") | .value' | sed 's/\\n/\n/g')
           echo "$PRIVATE_SSH_KEY"
