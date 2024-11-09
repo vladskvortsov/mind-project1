@@ -207,73 +207,17 @@ jobs:
         echo "public_subnet_id=$PUBLIC_SUBNET" >> $GITHUB_OUTPUT
         echo "private_subnet_id=$PRIVATE_SUBNET" >> $GITHUB_OUTPUT
 
-    - name: AWS SSM Send-Command
-      uses: peterkimzz/aws-ssm-send-command@master
-      id: ssm
+    - name: Export ENV from AWS SecretManager
+      uses: say8425/aws-secrets-manager-actions@v2
       with:
-        aws-region: ${{ secrets.AWS_REGION }}
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        instance-ids: "i-083604d67c3c4f4bf"
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+        SECRET_NAME: vladskvortsov-mind-master-sm-kNByk
+      
+    - name: Export ENV from AWS SecretManager
+      run: echo "$asm_secret"
 
-        working-directory: /home/ubuntu/mind
-        command: |
-          apt update -y
-          apt install -y unzip docker.io docker-compose git awscli
-          usermod -aG docker ubuntu
-          systemctl restart docker
-          # newgrp docker
-          sudo -u ubuntu aws configure set aws_access_key_id AWS_ACCESS_KEY_ID
-          sudo -u ubuntu aws configure set aws_secret_access_key AWS_SECRET_ACCESS_KEY
-          sudo -u ubuntu aws ecr get-login-password --region \$AWS_REGION | docker login --username AWS --password-stdin \$AWS_ACCOUNT_ID.dkr.ecr.\$AWS_REGION.amazonaws.com
-          cd /home/ubuntu/
-          git clone https://github.com/vladskvortsov/mind.git
-          cd mind/project1/
-          echo \"SECRET_KEY=my-secret-key
-          DEBUG=False
-
-          DB_NAME=mydb
-          DB_USER=dbuser
-          # DB_PASSWORD=mypassword
-          DB_HOST=$DB_HOST
-          DB_PORT=5432
-
-          REDIS_HOST=$REDIS_HOST
-          REDIS_PORT=6379
-          REDIS_DB=0
-          #REDIS_PASSWORD=mypassword
-
-          CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS\" > vars.env
-
-          echo '
-          version: \"3.8\"
-          services:
-            backend_rds:
-              env_file:
-                - vars.env
-              image: \$AWS_ACCOUNT_ID.dkr.ecr.\$AWS_REGION.amazonaws.com/project1-backend:backend-rds
-              container_name: backend_rds
-              ports:
-                - \"8000:8000\"
-              networks:
-                - backend
-              entrypoint: [\"sh\", \"-c\", \"sleep 10 && python manage.py runserver 0.0.0.0:8000\"]
-
-            backend_redis:
-              env_file:
-                - vars.env
-              image: \$AWS_ACCOUNT_ID.dkr.ecr.\$AWS_REGION.amazonaws.com/project1-backend:backend-redis
-              container_name: backend_redis
-              ports:
-                - \"8003:8003\"
-              networks:
-                - backend
-              entrypoint: [\"sh\", \"-c\", \"sleep 10 && python manage.py runserver 0.0.0.0:8003\"]
-
-          networks:
-            backend:
-              driver: bridge' > docker-compose.yml
-          docker-compose up -d
 
   deploy-elascticache:
     runs-on: ubuntu-latest
