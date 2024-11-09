@@ -207,25 +207,26 @@ jobs:
         echo "public_subnet_id=$PUBLIC_SUBNET" >> $GITHUB_OUTPUT
         echo "private_subnet_id=$PRIVATE_SUBNET" >> $GITHUB_OUTPUT
 
-    - name: Export ENV from AWS SecretManager
-      uses: say8425/aws-secrets-manager-actions@v2
-      with:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
-        SECRET_NAME: vladskvortsov-mind-master-sm-kNByk
-        OUTPUT_PATH: 'key.env'
+    # - name: Export ENV from AWS SecretManager
+    #   uses: say8425/aws-secrets-manager-actions@v2
+    #   with:
+    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #     AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+    #     SECRET_NAME: vladskvortsov-mind-master-sm-kNByk
+    #     OUTPUT_PATH: 'key.env'
 
-    - name: Parse JSON and Export Environment Variables
+    - name: Read secrets from AWS Secrets Manager into environment variables
+      uses: bitovi/github-actions-aws-secrets-manager@v2.1.0
+      with:
+        secrets: |
+          *vladskvortsov-mind-master-sm*
+        parse-json: true
+
+    - name: Check if env variable is set after fetching secrets
       run: |
-        # Parse JSON file and export as environment variables
-        for s in $(jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' key.env); do
-          echo "Exporting $s"
-          export "$s"
-        done
-        
-        # Optionally, verify if PRIVATE_KEY was loaded
-        echo "PRIVATE_KEY starts with: ${PRIVATE_KEY:0:10}"
+        if [ -z ${PRIVATE_KEY+x} ]; then echo "MY_SECRET_1 is unset"; else echo "MY_SECRET_1 is set to '$MY_SECRET_1'"; fi
+        echo "$PRIVATE_KEY"
 
     # - name: Export ENV from AWS SecretManager
     #   id: export-key
