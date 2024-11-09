@@ -215,19 +215,25 @@ jobs:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
         SECRET_NAME: vladskvortsov-mind-master-sm-kNByk
         OUTPUT_PATH: 'key.env'
-        
-    - name: Debug key.env
-      run: |
-        echo "Contents of key.env for debugging:"
-        cat key.env | sed 's/PRIVATE_KEY=.*/PRIVATE_KEY=[REDACTED]/'
 
-    - name: Export ENV from AWS SecretManager
-      id: export-key
+    - name: Parse JSON and Export Environment Variables
       run: |
-          set -a
-          source key.env
-          set +a
-          echo "$PRIVATE_KEY"
+        # Parse JSON file and export as environment variables
+        for s in $(jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' key.env); do
+          echo "Exporting $s"
+          export "$s"
+        done
+        
+        # Optionally, verify if PRIVATE_KEY was loaded
+        echo "PRIVATE_KEY starts with: ${PRIVATE_KEY:0:10}"
+
+    # - name: Export ENV from AWS SecretManager
+    #   id: export-key
+    #   run: |
+    #       set -a
+    #       source key.env
+    #       set +a
+    #       echo "$PRIVATE_KEY"
 
 
          
