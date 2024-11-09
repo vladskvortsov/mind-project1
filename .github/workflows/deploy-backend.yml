@@ -228,7 +228,7 @@ jobs:
     - name: Export ENV from AWS SecretManager
       id: export-key
       run: |
-          JSON_FIXED=$(echo "$SSH_KEYS_JSON" | sed ':a;N;$!ba;s/\n/\\n/g')
+          JSON_FIXED=$(echo "$PRIVATE_KEY" | sed ':a;N;$!ba;s/\n/\\n/g')
           PRIVATE_SSH_KEY=$(echo "$JSON_FIXED" | jq -r '.[] | select(.key == "private_key") | .value' | sed 's/\\n/\n/g')
           echo "$PRIVATE_SSH_KEY"
 
