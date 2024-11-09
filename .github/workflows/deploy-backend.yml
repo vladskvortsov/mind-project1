@@ -17,7 +17,6 @@ jobs:
       db_endpoint: ${{ steps.deploy.outputs.db_endpoint }}
       private_subnet_id: ${{ steps.subnets.outputs.private_subnet_id }}
       public_subnet_id: ${{ steps.subnets.outputs.public_subnet_id }}
-      ssh_private_key: ${{ steps.export-key.outputs.ssh_private_key }}
 
       # instance_endpoint: ${{ steps.deploy.outputs.instance_endpoint }}
 
@@ -225,6 +224,23 @@ jobs:
       run: |
          echo "$KEY"
 
+    - name: Deploy on EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: 13.60.209.66
+        username: ubuntu
+        key: $KEY
+        script: |
+              cd mind/
+              apt update 
+              apt install -y unzip docker
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip awscliv2.zip
+              ./aws/install 
+              sudo usermod -aG docker $USER
+              aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+              docker compose up -d
+
   deploy-elascticache:
     runs-on: ubuntu-latest
     needs: deploy-rds
@@ -260,15 +276,6 @@ jobs:
   #     instance-id: ${{ steps.create-ec2.outputs.instance-id }}
   #   steps:
         
-    
-
-
-    # - name: Add Key to GitHub Secrets""
-    #   run: |
-    #     echo "${{ steps.create_key.outputs.key }}" | gh secret set EC2_SSH_KEY
-
-  
-
 
     # - name: Setup EC2
     #   id: create-ec2
@@ -356,23 +363,27 @@ jobs:
 
 
 
-    # - name: Deploy on EC2
-    #   uses: appleboy/ssh-action@master
-    #   with:
-    #     host: $PUBLIC_IP
-    #     username: ubuntu
-    #     key: ${{ steps.create_key.outputs.key_content }}
-    #     script: |
-    #           cd mind/
-    #           apt update 
-    #           apt install -y unzip docker
-    #           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-    #           unzip awscliv2.zip
-    #           ./aws/install 
-    #           sudo usermod -aG docker $USER
-    #           newgrp docker         
-    #           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-    #           docker compose up -d
+
+
+
+
+
+    - name: Deploy on EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: $PUBLIC_IP
+        username: ubuntu
+        key: $KEY
+        script: |
+              cd mind/
+              apt update 
+              apt install -y unzip docker
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip awscliv2.zip
+              ./aws/install 
+              sudo usermod -aG docker $USER
+              aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+              docker compose up -d
 
 
 
