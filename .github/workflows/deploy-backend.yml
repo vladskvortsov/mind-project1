@@ -228,7 +228,8 @@ jobs:
     - name: Export ENV from AWS SecretManager
       id: export-key
       run: |
-          echo "$PRIVATE_KEY"
+          PRIVATE_SSH_KEY=$(echo "$PRIVATE_KEY" | jq -r '.private_key')
+          echo "$PRIVATE_SSH_KEY"
 
 
          
@@ -238,7 +239,7 @@ jobs:
       with:
         host: 13.60.209.66
         username: ubuntu
-        key: $PRIVATE_KEY
+        key: $PRIVATE_SSH_KEY
         script: |
               cd mind/
               apt update 
