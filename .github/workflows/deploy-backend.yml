@@ -220,7 +220,7 @@ jobs:
     - name: Export ENV from AWS SecretManager
       id: export-key
       run: |
-         echo "KEY=$(cat key.env)" >> $GITHUB_ENV
+         echo "KEY=$(cat key.env)"
 
     - name: Export ENV
       run: |
