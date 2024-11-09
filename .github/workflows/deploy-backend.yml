@@ -215,8 +215,12 @@ jobs:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
         SECRET_NAME: vladskvortsov-mind-master-sm-kNByk
         OUTPUT_PATH: 'key.env'
+        
+    - name: Debug key.env
+      run: |
+        echo "Contents of key.env for debugging:"
+        cat key.env | sed 's/PRIVATE_KEY=.*/PRIVATE_KEY=[REDACTED]/'
 
-    
     - name: Export ENV from AWS SecretManager
       id: export-key
       run: |
