@@ -229,7 +229,7 @@ jobs:
       with:
         host: 13.60.209.66
         username: ubuntu
-        key: $KEY
+        key: $asm_secret
         script: |
               cd mind/
               apt update 
