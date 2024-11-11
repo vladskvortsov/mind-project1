@@ -231,8 +231,18 @@ jobs:
       run: |
           echo "$SM_PRIVATE_KEY"
 
+    - name: Run SSH Command
+      id: ssh-command
+      uses: leonowski/ec2-ssh-ghactions@v1
+      with:
+        ec2_instance_id: i-083604d67c3c4f4bf
+        region: ${{ secrets.AWS_REGION }}
+        username: ubuntu
+        command: |
+              apt install -y unzip docker awscli
 
-         
+
+
 
     - name: Deploy on EC2
       uses: appleboy/ssh-action@master
