@@ -142,7 +142,8 @@ jobs:
           " > ${{ github.workspace }}/setup.sh
           chmod 777 ${{ github.workspace }}/setup.sh
           echo "$(cat ${{ github.workspace }}/setup.sh)"
-
+              aws secretsmanager restore-secret \
+              --secret-id vladskvortsov-mind-master-sm-kNByk
 
 
     - id: deploy
