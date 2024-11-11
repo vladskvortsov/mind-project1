@@ -221,7 +221,7 @@ jobs:
       uses: aws-actions/aws-secretsmanager-get-secrets@v2
       with:
         secret-ids: |
-          vladskvortsov-mind-master-sm*
+          PRIVATE_KEY, vladskvortsov-mind-master-sm*
         name-transformation: uppercase
         parse-json-secrets: true
 
@@ -240,7 +240,7 @@ jobs:
       with:
         host: 13.60.209.66
         username: ubuntu
-        key: $PRIVATE_SSH_KEY
+        key: $PRIVATE_KEY
         script: |
               cd mind/
               apt update 
