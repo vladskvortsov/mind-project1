@@ -239,7 +239,11 @@ jobs:
         region: ${{ secrets.AWS_REGION }}
         username: ubuntu
         command: |
-              apt install -y unzip docker awscli
+             sudo apt install -y unzip docker awscli
+
+    - name: Output
+      run: |
+        echo -e "${{ steps.ssh-command.outputs.command_output }}"
 
 
 
