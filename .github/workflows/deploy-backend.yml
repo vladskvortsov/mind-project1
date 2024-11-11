@@ -226,11 +226,10 @@ jobs:
         parse-json-secrets: true
 
   
-    # - name: Export ENV from AWS SecretManager
-    #   id: export-key
-    #   run: |
-    #       PRIVATE_SSH_KEY=$(echo "$(cat var.json)" | jq -r '.[] | select(.key == "private_key") | .value')
-    #       echo "$PRIVATE_SSH_KEY"
+    - name: Export ENV from AWS SecretManager
+      id: export-key
+      run: |
+          echo "$SM_PRIVATE_KEY"
 
 
          
