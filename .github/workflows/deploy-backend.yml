@@ -216,15 +216,17 @@ jobs:
         secret-ids: |
           SM, vladskvortsov-mind-master-sm*
         name-transformation: uppercase
-        parse-json-secrets: true
+        parse-json-secrets: false
 
-  
-    - name: Export ENV from AWS SecretManager
-      id: export-key
+    - name: Remove quotes from private key
       run: |
-          echo "$SM_PRIVATE_KEY"
-          echo "$SM_PRIVATE_KEY" > key.txt
-          cat key.txt
+        echo "$SM_PRIVATE_KEY" | sed 's/^"//' | sed 's/"$//' > private_key.pem
+        chmod 600 private_key.pem
+      shell: bash
+
+
+
+
 
     # - name: Run SSH Command
     #   id: ssh-command
@@ -254,7 +256,7 @@ jobs:
       with:
         host: 13.60.4.233
         username: ubuntu
-        key: $SM_PRIVATE_KEY
+        key_path: private_key.pem
         script: |
               cd mind/
               apt update 
