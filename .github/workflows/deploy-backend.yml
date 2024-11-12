@@ -220,12 +220,14 @@ jobs:
 
     - name: Remove quotes from private key
       run: |
-        echo "$SM_PRIVATE_KEY" | sed 's/^"//' | sed 's/"$//' > private_key.pem
+        echo "$SM_PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
         cat ${{ github.workspace }}/private_key.pem
         ls
         pwd
       shell: bash
+
+#  | sed 's/^"//' | sed 's/"$//' 
 
     - name: Sync files to S3
       run: |
