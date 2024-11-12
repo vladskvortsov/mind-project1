@@ -222,6 +222,7 @@ jobs:
       run: |
         echo "$SM_PRIVATE_KEY" | sed 's/^"//' | sed 's/"$//' > ${{ github.workspace }}/private_key.pem
         chmod 600 private_key.pem
+        cat ${{ github.workspace }}/private_key.pem
       shell: bash
 
 
