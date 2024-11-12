@@ -220,7 +220,7 @@ jobs:
 
     - name: Remove quotes from private key
       run: |
-        echo "$SM_PRIVATE_KEY" | sed 's/^"//' | sed 's/"$//' > private_key.pem
+        echo "$SM_PRIVATE_KEY" | sed 's/^"//' | sed 's/"$//' > ${{ github.workspace }}/private_key.pem
         chmod 600 private_key.pem
       shell: bash
 
@@ -256,7 +256,7 @@ jobs:
       with:
         host: 13.60.4.233
         username: ubuntu
-        key_path: private_key.pem
+        key_path: ${{ github.workspace }}/private_key.pem
         script: |
               cd mind/
               apt update 
