@@ -221,11 +221,8 @@ jobs:
     - name: Remove quotes from private key
       run: |
         PRIVATE_KEY=$SM_PRIVATE_KEY
-        chmod 600 private_key.pem
-        cat ${{ github.workspace }}/private_key.pem
         echo "$PRIVATE_KEY"
-        ls
-        pwd
+      
       shell: bash
 
 #  | sed 's/^"//' | sed 's/"$//' 
