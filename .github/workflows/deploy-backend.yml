@@ -216,7 +216,7 @@ jobs:
         secret-ids: |
           SM, vladskvortsov-mind-master-sm*
         name-transformation: uppercase
-        parse-json-secrets: false
+        parse-json-secrets: true
 
     - name: Remove quotes from private key
       run: |
