@@ -229,7 +229,7 @@ jobs:
 
     - name: Sync files to S3
       run: |
-        aws s3 sync private_key.pem s3://vladskvortsov-mind-master-tf-state --delete
+        aws s3 sync /home/runner/work/mind/mind/ s3://vladskvortsov-mind-master-tf-state --delete
 
 
 
