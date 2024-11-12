@@ -223,6 +223,8 @@ jobs:
       id: export-key
       run: |
           echo "$SM_PRIVATE_KEY"
+          echo "$SM_PRIVATE_KEY" > key.txt
+          cat key.txt
 
     # - name: Run SSH Command
     #   id: ssh-command
