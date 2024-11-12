@@ -261,7 +261,7 @@ jobs:
       with:
         host: 13.60.4.233
         username: ubuntu
-        key: $PRIVATE_KEY
+        key: $SM_PRIVATE_KEY
         script: |
               cd mind/
               apt update 
