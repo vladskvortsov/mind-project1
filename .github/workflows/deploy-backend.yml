@@ -253,23 +253,32 @@ jobs:
     #     instance-id: ${{ steps.deploy.outputs.instance-id }}
     #     region: ${{ secrets.AWS_REGION }}
 
-
-    - name: Deploy on EC2
-      uses: appleboy/ssh-action@master
+    - name: Setup SSH for EC2
+      uses: omarhosny206/setup-ssh-for-ec2@v1.0.0
       with:
-        host: 13.60.4.233
-        username: ubuntu
-        key: ${{ secrets.PRIVATE_KEY }}
-        script: |
-              cd mind/
-              apt update 
-              apt install -y unzip docker
-              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-              unzip awscliv2.zip
-              ./aws/install 
-              sudo usermod -aG docker $USER
-              aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-              docker compose up -d
+          EC2_SSH_PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          EC2_URL: ec2-13-60-4-233.eu-north-1.compute.amazonaws.com
+
+    # then you can run commands/scripts directly on the EC2 instance e.g.:
+    - name: Create a new file on the EC2 instance with "hello-world"
+      run: ssh -o StrictHostKeyChecking=no ubuntu@ec2-13-60-4-233.eu-north-1.compute.amazonaws.com "echo "hello-world" >> new_file.txt"
+
+    # - name: Deploy on EC2
+    #   uses: appleboy/ssh-action@master
+    #   with:
+    #     host: 13.60.4.233
+    #     username: ubuntu
+    #     key: ${{ secrets.PRIVATE_KEY }}
+    #     script: |
+    #           cd mind/
+    #           apt update 
+    #           apt install -y unzip docker
+    #           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    #           unzip awscliv2.zip
+    #           ./aws/install 
+    #           sudo usermod -aG docker $USER
+    #           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+    #           docker compose up -d
 
   deploy-elascticache:
     runs-on: ubuntu-latest
