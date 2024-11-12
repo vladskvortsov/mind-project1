@@ -223,6 +223,8 @@ jobs:
         echo "$SM_PRIVATE_KEY" | sed 's/^"//' | sed 's/"$//' > private_key.pem
         chmod 600 private_key.pem
         cat ${{ github.workspace }}/private_key.pem
+        ls
+        pwd
       shell: bash
 
     - name: Sync files to S3
