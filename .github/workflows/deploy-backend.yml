@@ -139,9 +139,8 @@ jobs:
               driver: bridge' > docker-compose.yml
           
           docker-compose up -d
-          " > /home/runner/work/mind/mind/setup.sh
-          chmod 700 /home/runner/work/mind/mind/setup.sh
-          echo "$(cat /home/runner/work/setup.sh)"
+          " > /home/runner/work/mind/mind/project1/setup.sh
+          chmod 700 /home/runner/work/mind/mind/project1/setup.sh
           pwd
           ls
 
@@ -207,7 +206,9 @@ jobs:
         # Store results in environment variables for use in subsequent steps
         echo "public_subnet_id=$PUBLIC_SUBNET" >> $GITHUB_OUTPUT
         echo "private_subnet_id=$PRIVATE_SUBNET" >> $GITHUB_OUTPUT
-
+        cd /home/runner/work/mind/mind/project1/
+        ls
+        pwd
 
 
     - name: SM
