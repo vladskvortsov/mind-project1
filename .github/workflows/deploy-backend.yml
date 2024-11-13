@@ -83,7 +83,7 @@ jobs:
       run: |
           echo "#!/bin/bash
           apt update -y
-          apt install -y unzip docker.io docker-compose git awscli
+          apt install -y unzip docker.io docker-compose awscli
           usermod -aG docker ubuntu
           systemctl restart docker
           # newgrp docker
@@ -174,7 +174,7 @@ jobs:
         aws_ec2_port_list: 8000,8003,8080
         aws_ec2_iam_instance_profile: project1-ecr-access
         docker_repo_app_directory: ./project1/
-        aws_ec2_user_data_file: /home/runner/work/setup.sh
+        aws_ec2_user_data_file: setup-test.sh
         aws_ec2_create_keypair_sm: true
 
         aws_rds_db_enable: true        
