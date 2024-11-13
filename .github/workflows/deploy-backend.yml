@@ -139,56 +139,54 @@ jobs:
               driver: bridge' > docker-compose.yml
           
           docker-compose up -d
-          " > ${{ github.workspace }}/setup.sh
-          chmod 777 ${{ github.workspace }}/setup.sh
-          echo "$(cat ${{ github.workspace }}/setup.sh)"
+          " > /home/runner/work/setup.sh
+          chmod 777 /home/runner/work/setup.sh
+          echo "$(cat /home/runner/work/setup.sh)"
           pwd
           ls
 
 
+    - id: deploy
+      name: Deploy EC2 and RDS
+      uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_default_region: ${{ secrets.AWS_REGION }}
 
-    # - id: deploy
-    #   name: Deploy EC2 and RDS
-    #   uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
-    #   with:
-    #     aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    #     aws_default_region: ${{ secrets.AWS_REGION }}
-
-
-    #     ansible_start_docker_timeout: 600
+        ansible_start_docker_timeout: 600
 
 
-    #     aws_vpc_create: true
-    #     aws_vpc_name: project1-vpc
-    #     # aws_vpc_cidr_block: 10.0.0.0/16
-    #     aws_vpc_public_subnets: 10.10.10.0/24,10.10.40.0/24
-    #     aws_vpc_private_subnets: 10.10.20.0/24,10.10.30.0/24
-    #     aws_vpc_availability_zones:  ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
-    #     aws_elb_create: false
-    #     # aws_elb_app_port: 8000,8003,8080
-    #     # aws_elb_listen_port: 8000,8003,80
-    #     # # aws_elb_healthcheck: "HTTP:8080"
+        aws_vpc_create: true
+        aws_vpc_name: project1-vpc
+        # aws_vpc_cidr_block: 10.0.0.0/16
+        aws_vpc_public_subnets: 10.10.10.0/24,10.10.40.0/24
+        aws_vpc_private_subnets: 10.10.20.0/24,10.10.30.0/24
+        aws_vpc_availability_zones:  ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
+        aws_elb_create: false
+        # aws_elb_app_port: 8000,8003,8080
+        # aws_elb_listen_port: 8000,8003,80
+        # # aws_elb_healthcheck: "HTTP:8080"
 
-    #     aws_ec2_instance_create: true
-    #     aws_ec2_instance_type: t3.micro
-    #     aws_ec2_instance_root_vol_size: 8
-    #     aws_ec2_port_list: 8000,8003,8080
-    #     aws_ec2_iam_instance_profile: project1-ecr-access
-    #     docker_repo_app_directory: ./project1/
-    #     aws_ec2_user_data_file: ${{ github.workspace }}/setup.sh
-    #     aws_ec2_create_keypair_sm: true
+        aws_ec2_instance_create: true
+        aws_ec2_instance_type: t3.micro
+        aws_ec2_instance_root_vol_size: 8
+        aws_ec2_port_list: 8000,8003,8080
+        aws_ec2_iam_instance_profile: project1-ecr-access
+        docker_repo_app_directory: ./project1/
+        aws_ec2_user_data_file: /home/runner/work/setup.sh
+        aws_ec2_create_keypair_sm: true
 
-    #     aws_rds_db_enable: true        
-    #     aws_rds_db_name: mydb
-    #     aws_rds_db_user: dbuser
-    #     aws_rds_db_engine: postgres
-    #     aws_rds_db_port: 5432
-    #     aws_rds_db_allocated_storage: 20
-    #     aws_rds_db_instance_class: db.t3.micro
-    #     aws_rds_db_final_snapshot:
-    #     aws_rds_db_multi_az: false
-    #     aws_rds_db_apply_immediately: true
+        aws_rds_db_enable: true        
+        aws_rds_db_name: mydb
+        aws_rds_db_user: dbuser
+        aws_rds_db_engine: postgres
+        aws_rds_db_port: 5432
+        aws_rds_db_allocated_storage: 20
+        aws_rds_db_instance_class: db.t3.micro
+        aws_rds_db_final_snapshot:
+        aws_rds_db_multi_az: false
+        aws_rds_db_apply_immediately: true
 
 # tf_stack_destroy: true
 # tf_state_bucket_destroy: true
@@ -225,11 +223,12 @@ jobs:
       
     #   shell: bash
 
-#  | sed 's/^"//' | sed 's/"$//' 
 
     # - name: Sync files to S3
     #   run: |
     #     aws s3 sync /home/runner/work/mind/mind/ s3://vladskvortsov-mind-master-tf-state --delete
+
+
 
 
 
@@ -247,6 +246,9 @@ jobs:
     #   run: |
     #     echo -e "${{ steps.ssh-command.outputs.command_output }}"
 
+
+
+
     
     # - name: Describe Instance
     #   id: ec2-describe
@@ -255,15 +257,20 @@ jobs:
     #     instance-id: ${{ steps.deploy.outputs.instance-id }}
     #     region: ${{ secrets.AWS_REGION }}
 
-    - name: Setup SSH for EC2
-      uses: omarhosny206/setup-ssh-for-ec2@v1.0.0
-      with:
-          EC2_SSH_PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-          EC2_URL: 13.60.4.233
 
-    # then you can run commands/scripts directly on the EC2 instance e.g.:
-    - name: Create a new file on the EC2 instance with "hello-world"
-      run: ssh -o StrictHostKeyChecking=no ubuntu@13.60.4.233 "echo "hello-world" >> new_file.txt"
+
+
+    # - name: Setup SSH for EC2
+    #   uses: omarhosny206/setup-ssh-for-ec2@v1.0.0
+    #   with:
+    #       EC2_SSH_PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+    #       EC2_URL: 13.60.4.233
+
+    # # then you can run commands/scripts directly on the EC2 instance e.g.:
+    # - name: Create a new file on the EC2 instance with "hello-world"
+    #   run: ssh -o StrictHostKeyChecking=no ubuntu@13.60.4.233 "echo "hello-world" >> new_file.txt"
+
+
 
     # - name: Deploy on EC2
     #   uses: appleboy/ssh-action@master
