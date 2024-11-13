@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "$AWS_ACCESS_KEY_ID $AWS_REGION $AWS_ACCOUNT_ID" > vars
+echo "$AWS_ACCESS_KEY_ID $AWS_REGION $AWS_ACCOUNT_ID" > ./vars
 apt update -y
 apt install -y unzip docker.io docker-compose git awscli
 usermod -aG docker ubuntu

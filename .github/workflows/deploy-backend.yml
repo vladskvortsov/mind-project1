@@ -139,8 +139,8 @@ jobs:
               driver: bridge' > docker-compose.yml
           
           docker-compose up -d
-          " > /home/runner/work/setup.sh
-          chmod 777 /home/runner/work/setup.sh
+          " > /home/runner/work/mind/mind/setup.sh
+          chmod 700 /home/runner/work/mind/mind/setup.sh
           echo "$(cat /home/runner/work/setup.sh)"
           pwd
           ls
@@ -218,10 +218,12 @@ jobs:
         name-transformation: uppercase
         parse-json-secrets: true
 
-    # - name: Remove quotes from private key
-    #   run: |
-      
-    #   shell: bash
+    - name: Remove quotes from private key
+      run: |
+        pwd
+        ls
+
+      shell: bash
 
 
     # - name: Sync files to S3
