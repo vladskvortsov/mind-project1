@@ -1,7 +1,6 @@
 #!/bin/bash
-echo "$AWS_ACCESS_KEY_ID $AWS_REGION $AWS_ACCOUNT_ID" > ./vars
 apt update -y
-apt install -y unzip docker.io docker-compose git awscli
+apt install -y unzip docker.io docker-compose awscli
 usermod -aG docker ubuntu
 systemctl restart docker
 # newgrp docker
@@ -14,18 +13,19 @@ cd mind/project1/
 echo "SECRET_KEY=my-secret-key
 DEBUG=False
 
+AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID
 DB_NAME=mydb
 DB_USER=dbuser
 # DB_PASSWORD=mypassword
-DB_HOST=mydb.cd4yqq2kkslu.eu-north-1.rds.amazonaws.com
+DB_HOST=$DB_HOST
 DB_PORT=5432
 
-REDIS_HOST=redis-0001-001.redis.fljh7y.eun1.cache.amazonaws.com
+REDIS_HOST=$REDIS_HOST
 REDIS_PORT=6379
 REDIS_DB=0
 #REDIS_PASSWORD=mypassword
 
-CORS_ALLOWED_ORIGINS=http://d2xytvnh88jebv.cloudfront.net" > vars.env
+CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS" > vars.env
 
 echo '
 # version: '3.8'
@@ -33,7 +33,7 @@ services:
 backend_rds:
     env_file:
     - vars.env
-    image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
+    image: $AWS_ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
     container_name: backend_rds
     ports:
     - "8000:8000"
