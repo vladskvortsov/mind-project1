@@ -179,7 +179,7 @@ jobs:
 
         ansible_start_docker_timeout: 600
 
-        env_ghv: vars
+        env_ghv: $vars
         # env_repo: /home/runner/vars.env
         aws_vpc_create: true
         aws_vpc_name: project1-vpc
