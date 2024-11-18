@@ -1,11 +1,9 @@
 #!/bin/bash
-
-env_file: ~/mind/project1/.env
-
+. .env
 apt update -y
 apt install -y awscli
-# usermod -aG docker ubuntu
-# systemctl restart docker
+usermod -aG docker ubuntu
+systemctl restart docker
 # newgrp docker
 sudo -u ubuntu aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
 sudo -u ubuntu aws configure set aws_secret_access_key  $AWS_SECRET_ACCESS_KEY

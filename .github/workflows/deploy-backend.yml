@@ -25,9 +25,8 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      # DB_HOST: 
-      # REDIS_HOST: 
-      CORS_ALLOWED_ORIGINS:
+      REDIS_HOST: 
+      CORS_ALLOWED_ORIGINS: https://d2xytvnh88jebv.cloudfront.net
 
     steps:
     - name: Checkout code
@@ -79,95 +78,95 @@ jobs:
       #   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       #   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-    - name: Create setup.sh
-      run: |
-          echo "#!/bin/bash
-          apt update -y
-          apt install -y unzip docker.io docker-compose awscli
-          usermod -aG docker ubuntu
-          systemctl restart docker
-          # newgrp docker
-          sudo -u ubuntu aws configure set aws_access_key_id AWS_ACCESS_KEY_ID
-          sudo -u ubuntu aws configure set aws_secret_access_key AWS_SECRET_ACCESS_KEY
-          sudo -u ubuntu aws ecr get-login-password --region \$AWS_REGION | docker login --username AWS --password-stdin \$AWS_ACCOUNT_ID.dkr.ecr.\$AWS_REGION.amazonaws.com
-          cd /home/ubuntu/
-          git clone https://github.com/vladskvortsov/mind.git
-          cd mind/project1/
-          echo \"SECRET_KEY=my-secret-key
-          DEBUG=False
+    # - name: Create setup.sh
+    #   run: |
+    #       echo "#!/bin/bash
+    #       apt update -y
+    #       apt install -y unzip docker.io docker-compose awscli
+    #       usermod -aG docker ubuntu
+    #       systemctl restart docker
+    #       # newgrp docker
+    #       sudo -u ubuntu aws configure set aws_access_key_id AWS_ACCESS_KEY_ID
+    #       sudo -u ubuntu aws configure set aws_secret_access_key AWS_SECRET_ACCESS_KEY
+    #       sudo -u ubuntu aws ecr get-login-password --region \$AWS_REGION | docker login --username AWS --password-stdin \$AWS_ACCOUNT_ID.dkr.ecr.\$AWS_REGION.amazonaws.com
+    #       cd /home/ubuntu/
+    #       git clone https://github.com/vladskvortsov/mind.git
+    #       cd mind/project1/
+    #       echo \"SECRET_KEY=my-secret-key
+    #       DEBUG=False
 
-          DB_NAME=mydb
-          DB_USER=dbuser
-          # DB_PASSWORD=mypassword
-          DB_HOST=$DB_HOST
-          DB_PORT=5432
+    #       DB_NAME=mydb
+    #       DB_USER=dbuser
+    #       # DB_PASSWORD=mypassword
+    #       DB_HOST=$DB_HOST
+    #       DB_PORT=5432
 
-          REDIS_HOST=$REDIS_HOST
-          REDIS_PORT=6379
-          REDIS_DB=0
-          #REDIS_PASSWORD=mypassword
+    #       REDIS_HOST=$REDIS_HOST
+    #       REDIS_PORT=6379
+    #       REDIS_DB=0
+    #       #REDIS_PASSWORD=mypassword
 
-          CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS\" > vars.env
+    #       CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS\" > vars.env
 
-          echo '
-          version: \"3.8\"
-          services:
-            backend_rds:
-              env_file:
-                - vars.env
-              image: \$AWS_ACCOUNT_ID.dkr.ecr.\$AWS_REGION.amazonaws.com/project1-backend:backend-rds
-              container_name: backend_rds
-              ports:
-                - \"8000:8000\"
-              networks:
-                - backend
-              entrypoint: [\"sh\", \"-c\", \"sleep 10 && python manage.py runserver 0.0.0.0:8000\"]
+    #       echo '
+    #       version: \"3.8\"
+    #       services:
+    #         backend_rds:
+    #           env_file:
+    #             - vars.env
+    #           image: \$AWS_ACCOUNT_ID.dkr.ecr.\$AWS_REGION.amazonaws.com/project1-backend:backend-rds
+    #           container_name: backend_rds
+    #           ports:
+    #             - \"8000:8000\"
+    #           networks:
+    #             - backend
+    #           entrypoint: [\"sh\", \"-c\", \"sleep 10 && python manage.py runserver 0.0.0.0:8000\"]
 
-            backend_redis:
-              env_file:
-                - vars.env
-              image: \$AWS_ACCOUNT_ID.dkr.ecr.\$AWS_REGION.amazonaws.com/project1-backend:backend-redis
-              container_name: backend_redis
-              ports:
-                - \"8003:8003\"
-              networks:
-                - backend
-              entrypoint: [\"sh\", \"-c\", \"sleep 10 && python manage.py runserver 0.0.0.0:8003\"]
+    #         backend_redis:
+    #           env_file:
+    #             - vars.env
+    #           image: \$AWS_ACCOUNT_ID.dkr.ecr.\$AWS_REGION.amazonaws.com/project1-backend:backend-redis
+    #           container_name: backend_redis
+    #           ports:
+    #             - \"8003:8003\"
+    #           networks:
+    #             - backend
+    #           entrypoint: [\"sh\", \"-c\", \"sleep 10 && python manage.py runserver 0.0.0.0:8003\"]
 
-          networks:
-            backend:
-              driver: bridge' > docker-compose.yml
+    #       networks:
+    #         backend:
+    #           driver: bridge' > docker-compose.yml
           
-          docker-compose up -d
-          " > /home/runner/setup.sh
-          chmod 700 /home/runner/setup.sh
-          cd /home/runner/
-          pwd
-          ls
+    #       docker-compose up -d
+    #       " > /home/runner/setup.sh
+    #       chmod 700 /home/runner/setup.sh
+    #       cd /home/runner/
+    #       pwd
+    #       ls
 
-          VARS='SECRET_KEY=my-secret-key
-                DEBUG=False
+    #       VARS='SECRET_KEY=my-secret-key
+    #             DEBUG=False
 
-                AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
-                AWS_REGION=${{ secrets.AWS_REGION }}
-                AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-                AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #             AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
+    #             AWS_REGION=${{ secrets.AWS_REGION }}
+    #             AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+    #             AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 
-                DB_NAME=mydb
-                DB_USER=dbuser
-                # DB_PASSWORD=mypassword
-                DB_HOST=$DB_HOST
-                DB_PORT=5432
+    #             DB_NAME=mydb
+    #             DB_USER=dbuser
+    #             # DB_PASSWORD=mypassword
+    #             DB_HOST=$DB_HOST
+    #             DB_PORT=5432
 
-                REDIS_HOST=$REDIS_HOST
-                REDIS_PORT=6379
-                REDIS_DB=0
-                #REDIS_PASSWORD=mypassword
+    #             REDIS_HOST=$REDIS_HOST
+    #             REDIS_PORT=6379
+    #             REDIS_DB=0
+    #             #REDIS_PASSWORD=mypassword
 
-                CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS'
-          echo "vars=$VARS" >> $GITHUB_ENV
-          echo "$vars"
+    #             CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS'
+    #       echo "vars=$VARS" >> $GITHUB_ENV
+    #       echo "$vars"
 
     - id: deploy
       name: Deploy EC2 and RDS
@@ -190,11 +189,11 @@ jobs:
                 AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
                 
                 #### Redis values
-                REDIS_HOST=$REDIS_HOST
+                REDIS_HOST=${{env.REDIS_HOST}}
                 REDIS_PORT=6379
                 REDIS_DB=0
                 #REDIS_PASSWORD=mypassword
-                CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS"
+                CORS_ALLOWED_ORIGINS=${{env.CORS_ALLOWED_ORIGINS}}
         # env_repo: /home/runner/vars.env
         aws_vpc_create: true
         aws_vpc_name: project1-vpc
@@ -213,7 +212,7 @@ jobs:
         aws_ec2_port_list: 8000,8003,8080
         aws_ec2_iam_instance_profile: project1-ecr-access
         docker_repo_app_directory: ./project1/
-        aws_ec2_user_data_file: ./project1/setup.sh
+        aws_ec2_user_data_file: ./project1/setup-test.sh
         aws_ec2_create_keypair_sm: false
 
         aws_rds_db_enable: true        
@@ -246,7 +245,7 @@ jobs:
         # Store results in environment variables for use in subsequent steps
         echo "public_subnet_id=$PUBLIC_SUBNET" >> $GITHUB_OUTPUT
         echo "private_subnet_id=$PRIVATE_SUBNET" >> $GITHUB_OUTPUT
-        echo "$vars"
+        # echo "$vars"
 
     # - name: SM
     #   uses: aws-actions/aws-secretsmanager-get-secrets@v2
