@@ -1,7 +1,7 @@
 #!/bin/bash
 . .env
 sudo apt update -y
-sudo install -y awscli
+sudo install docker.io awscli
 sudo usermod -aG docker ubuntu
 sudo systemctl restart docker
 # newgrp docker
@@ -56,4 +56,4 @@ sudo -u ubuntu aws ecr get-login-password --region $AWS_REGION | docker login --
 # networks:
 # backend:
 #     driver: bridge' > docker-compose.yml
-sudo -u ubuntu docker-compose up -d
+# sudo -u ubuntu docker-compose up -d
