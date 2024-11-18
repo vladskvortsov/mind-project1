@@ -1,9 +1,9 @@
 #!/bin/bash
 . .env
-apt update -y
-apt install -y awscli
-usermod -aG docker ubuntu
-systemctl restart docker
+sudo apt update -y
+sudo install -y awscli
+sudo usermod -aG docker ubuntu
+sudo systemctl restart docker
 # newgrp docker
 sudo -u ubuntu aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
 sudo -u ubuntu aws configure set aws_secret_access_key  $AWS_SECRET_ACCESS_KEY
@@ -56,4 +56,4 @@ sudo -u ubuntu aws ecr get-login-password --region $AWS_REGION | docker login --
 # networks:
 # backend:
 #     driver: bridge' > docker-compose.yml
-docker-compose up -d
+sudo -u ubuntu docker-compose up -d
