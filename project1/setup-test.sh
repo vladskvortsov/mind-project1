@@ -7,25 +7,25 @@ systemctl restart docker
 sudo -u ubuntu aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
 sudo -u ubuntu aws configure set aws_secret_access_key  $AWS_SECRET_ACCESS_KEY
 sudo -u ubuntu aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-cd /home/ubuntu/
-git clone https://github.com/vladskvortsov/mind.git
+# cd /home/ubuntu/
+# git clone https://github.com/vladskvortsov/mind.git
 cd mind/project1/
-echo "SECRET_KEY=my-secret-key
-DEBUG=False
+# echo "SECRET_KEY=my-secret-key
+# DEBUG=False
 
-AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID
-DB_NAME=mydb
-DB_USER=dbuser
-# DB_PASSWORD=mypassword
-DB_HOST=$DB_HOST
-DB_PORT=5432
+# AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID
+# DB_NAME=mydb
+# DB_USER=dbuser
+# # DB_PASSWORD=mypassword
+# DB_HOST=$DB_HOST
+# DB_PORT=5432
 
-REDIS_HOST=$REDIS_HOST
-REDIS_PORT=6379
-REDIS_DB=0
-#REDIS_PASSWORD=mypassword
+# REDIS_HOST=$REDIS_HOST
+# REDIS_PORT=6379
+# REDIS_DB=0
+# #REDIS_PASSWORD=mypassword
 
-CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS" > vars.env
+# CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS" > vars.env
 
 echo '
 # version: '3.8'
