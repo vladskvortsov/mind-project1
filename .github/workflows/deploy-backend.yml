@@ -139,9 +139,9 @@ jobs:
               driver: bridge' > docker-compose.yml
           
           docker-compose up -d
-          " > /home/runner/work/_actions/bitovi/github-actions-commons/v0.0.13/operations/deployment/ansible/clone_repo/app/mind/setup.sh
-          chmod 700 /home/runner/work/_actions/bitovi/github-actions-commons/v0.0.13/operations/deployment/ansible/clone_repo/app/mind/setup.sh
-          cd /home/runner/work/_actions/bitovi/github-actions-commons/v0.0.13/operations/deployment/ansible/clone_repo/app/mind
+          " > /home/runner/work/setup.sh
+          chmod 700 /home/runner/work/setup.sh
+          cd /home/runner/work/
           pwd
           ls
 
@@ -229,7 +229,7 @@ jobs:
         # Store results in environment variables for use in subsequent steps
         echo "public_subnet_id=$PUBLIC_SUBNET" >> $GITHUB_OUTPUT
         echo "private_subnet_id=$PRIVATE_SUBNET" >> $GITHUB_OUTPUT
-        cd /home/runner/work/_actions/bitovi/github-actions-commons/v0.0.13/operations/deployment/ansible/clone_repo/app/mind
+        cd /home/runner/
         ls
         pwd
         cat /home/runner/vars.env
@@ -241,8 +241,6 @@ jobs:
           SM, vladskvortsov-mind-master-sm*
         name-transformation: uppercase
         parse-json-secrets: true
-
-
 
 
 
