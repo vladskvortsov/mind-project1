@@ -139,9 +139,9 @@ jobs:
               driver: bridge' > docker-compose.yml
           
           docker-compose up -d
-          " > /home/runner/work/mind/mind/project1/setup.sh
-          chmod 700 /home/runner/work/mind/mind/project1/setup.sh
-          cd /home/runner/work/mind/mind/project1/
+          " > /home/runner/work/_actions/bitovi/github-actions-commons/v0.0.13/operations/deployment/ansible/clone_repo/app/mind/setup.sh
+          chmod 700 /home/runner/work/_actions/bitovi/github-actions-commons/v0.0.13/operations/deployment/ansible/clone_repo/app/mind/setup.sh
+          cd /home/runner/work/_actions/bitovi/github-actions-commons/v0.0.13/operations/deployment/ansible/clone_repo/app/mind
           pwd
           ls
 
@@ -179,7 +179,6 @@ jobs:
         ansible_start_docker_timeout: 600
 
         env_repo: /home/runner/vars.env
-        # env_ghs: ENV
         aws_vpc_create: true
         aws_vpc_name: project1-vpc
         # aws_vpc_cidr_block: 10.0.0.0/16
@@ -230,7 +229,7 @@ jobs:
         # Store results in environment variables for use in subsequent steps
         echo "public_subnet_id=$PUBLIC_SUBNET" >> $GITHUB_OUTPUT
         echo "private_subnet_id=$PRIVATE_SUBNET" >> $GITHUB_OUTPUT
-        cd /home/runner/
+        cd /home/runner/work/_actions/bitovi/github-actions-commons/v0.0.13/operations/deployment/ansible/clone_repo/app/mind
         ls
         pwd
         cat /home/runner/vars.env
@@ -243,12 +242,8 @@ jobs:
         name-transformation: uppercase
         parse-json-secrets: true
 
-    - name: Remove quotes from private key
-      run: |
-        pwd
-        ls
 
-      shell: bash
+
 
 
     # - name: Sync files to S3
