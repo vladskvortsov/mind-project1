@@ -139,9 +139,9 @@ jobs:
               driver: bridge' > docker-compose.yml
           
           docker-compose up -d
-          " > /home/runner/work/setup.sh
-          chmod 700 /home/runner/work/setup.sh
-          cd /home/runner/work/
+          " > /home/runner/setup.sh
+          chmod 700 /home/runner/setup.sh
+          cd /home/runner/
           pwd
           ls
 
