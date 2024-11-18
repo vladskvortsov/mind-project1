@@ -3,7 +3,7 @@ set -a
 source .env
 set +a
 sudo apt update -y
-sudo install docker.io awscli
+sudo apt install -y docker.io awscli
 sudo usermod -aG docker ubuntu
 sudo systemctl restart docker
 # newgrp docker
