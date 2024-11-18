@@ -1,5 +1,7 @@
 #!/bin/bash
-. .env
+set -a            
+source .env
+set +a
 sudo apt update -y
 sudo install docker.io awscli
 sudo usermod -aG docker ubuntu
