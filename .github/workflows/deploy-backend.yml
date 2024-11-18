@@ -249,13 +249,13 @@ jobs:
         echo "private_subnet_id=$PRIVATE_SUBNET" >> $GITHUB_OUTPUT
         echo "$vars"
 
-    - name: SM
-      uses: aws-actions/aws-secretsmanager-get-secrets@v2
-      with:
-        secret-ids: |
-          SM, vladskvortsov-mind-master-sm*
-        name-transformation: uppercase
-        parse-json-secrets: true
+    # - name: SM
+    #   uses: aws-actions/aws-secretsmanager-get-secrets@v2
+    #   with:
+    #     secret-ids: |
+    #       SM, vladskvortsov-mind-master-sm*
+    #     name-transformation: uppercase
+    #     parse-json-secrets: true
 
 
 
