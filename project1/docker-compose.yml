@@ -1,6 +1,32 @@
 version: "3.8"
 services:
+  ecr-login:
+    env_file:
+      - .env
+    image: ubuntu:latest
+    container_name: ecr-login
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.docker/config.json:/root/.docker/config.json
+    entrypoint: ["sh", "-c", "apt-get update -y &&
+      apt-get install -y docker.io curl unzip &&
+      curl 'https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip' -o 'awscliv2.zip' &&
+      unzip awscliv2.zip &&
+      ./aws/install &&
+      aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com && sleep 999" ]
+    healthcheck:
+      test: ["CMD", "sh", "-c", "docker info > /dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    restart: on-failure
+    networks:
+      - backend
+
   backend_rds:
+    depends_on: 
+      ecr-login:
+        condition: service_healthy
     env_file:
       - .env
     image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/project1-backend:backend-rds
@@ -12,6 +38,9 @@ services:
     entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8000"]
 
   backend_redis:
+    depends_on: 
+      ecr-login:
+        condition: service_healthy
     env_file:
       - .env
     image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/project1-backend:backend-redis
