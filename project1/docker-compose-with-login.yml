@@ -7,16 +7,16 @@ services:
     container_name: ecr-login
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ~/.docker/:/root/.docker/
+      - ~/.docker/config.json:/root/.docker/config.json
     entrypoint: ["sh", "-c", "apt-get update -y &&
       apt-get install -y docker.io curl unzip &&
       curl 'https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip' -o 'awscliv2.zip' &&
       unzip awscliv2.zip &&
       ./aws/install &&
-      aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com && sleep 15" ]
+      aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com && sleep infinity"]
     healthcheck:
-      test: ["CMD", "sh", "-c", "docker info > /dev/null"]
-      interval: 5s
+      test: ["CMD", "sh", "-c", "cat ~/.docker/config.json | grep -q 'https://$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com'"]
+      interval: 10s
       timeout: 3s
       retries: 3
     restart: on-failure
@@ -34,6 +34,7 @@ services:
     networks:
       - backend
     entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8000"]
+    restart: on-failure
 
   backend_redis:
     depends_on: 
@@ -48,6 +49,7 @@ services:
     networks:
       - backend
     entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8003"]
+    restart: on-failure
 
 networks:
   backend:
