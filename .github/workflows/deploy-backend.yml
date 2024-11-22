@@ -18,16 +18,119 @@ jobs:
       private_subnet_id: ${{ steps.subnets.outputs.private_subnet_id }}
       public_subnet_id: ${{ steps.subnets.outputs.public_subnet_id }}
 
-      # instance_endpoint: ${{ steps.deploy.outputs.instance_endpoint }}
+    steps:
 
+    - id: deploy
+      uses: bitovi/github-actions-deploy-rds@v0.1.5
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_default_region: ${{ secrets.AWS_REGION }}
+
+        aws_vpc_create: true
+        aws_vpc_name: project1-vpc
+        # aws_vpc_cidr_block: 10.0.0.0/16
+        aws_vpc_public_subnets: 10.10.10.0/24,10.10.40.0/24
+        aws_vpc_private_subnets: 10.10.20.0/24,10.10.30.0/24
+        aws_vpc_availability_zones:  ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
+
+        aws_rds_db_enable: true        
+        aws_rds_db_name: mydb
+        aws_rds_db_user: dbuser
+        aws_rds_db_engine: postgres
+        aws_rds_db_port: 5432
+        aws_rds_db_allocated_storage: 20
+        aws_rds_db_instance_class: db.t3.micro
+        aws_rds_db_final_snapshot:
+        aws_rds_db_multi_az: false
+        aws_rds_db_apply_immediately: true
+
+        tf_state_bucket: project1-resources
+        tf_state_file_name_append: rds-dev-db
+
+        # tf_stack_destroy: true
+        # tf_state_bucket_destroy: true
+
+    - name: Create EC2 Security Group
+      id: create_sg
+      run: |
+        SG_ID=$(aws ec2 create-security-group --group-name EC2-SG \
+          --vpc-id ${{ steps.deploy.outputs.aws_vpc_id }} --query 'GroupId' --output text)
+        echo "Security group created with ID: $SG_ID"
+        echo "ec2_sg_id=$SG_ID" >> $GITHUB_OUTPUT
+
+    - name: Add Ingress Rules
+      run: |
+        aws ec2 authorize-security-group-ingress --group-id ${{ steps.deploy.outputs.ec2_sg_id }} \
+          --protocol tcp --port 22 --cidr 0.0.0.0/0
+        aws ec2 authorize-security-group-ingress --group-id ${{ steps.deploy.outputs.ec2_sg_id }} \
+          --protocol tcp --port 8000 --cidr 0.0.0.0/0
+        aws ec2 authorize-security-group-ingress --group-id ${{ steps.deploy.outputs.ec2_sg_id }} \
+          --protocol tcp --port 8003 --cidr 0.0.0.0/0
+        echo "Ingress rules added to security group: ${{ steps.deploy.outputs.ec2_sg_id }}"
+  
+
+    - name: Retrieve Public and Private Subnet IDs
+      id: subnets  # Step ID for accessing outputs
+      run: |
+        ALL_SUBNETS=$(aws ec2 describe-subnets \
+          --filters "Name=vpc-id,Values=${{ steps.deploy.outputs.aws_vpc_id }}" \
+          --query "Subnets[].[SubnetId, MapPublicIpOnLaunch]" \
+          --output json)
+
+        # Separate subnets into public and private based on MapPublicIpOnLaunch
+          PUBLIC_SUBNET=$(echo $ALL_SUBNETS | jq -r '.[] | select(.[1] == true) | .[0]' | head -n 1)
+          PRIVATE_SUBNET=$(echo $ALL_SUBNETS | jq -r '.[] | select(.[1] == false) | .[0]' | head -n 1)
+
+        # Store results in environment variables for use in subsequent steps
+        echo "public_subnet_id=$PUBLIC_SUBNET" >> $GITHUB_OUTPUT
+        echo "private_subnet_id=$PRIVATE_SUBNET" >> $GITHUB_OUTPUT
+
+
+
+
+  deploy-elascticache:
+    runs-on: ubuntu-latest
+    needs: deploy-rds
+    outputs:
+      redis_connection_string_secret: ${{ steps.create-redis.outputs.redis_connection_string_secret }}
+      redis_sg_id: ${{ steps.create-redis.outputs.redis_sg_id }}
+    steps:
+    - name: Create a Redis DB
+      id: create-redis
+      uses: bitovi/github-actions-deploy-redis-db@v0.1.1
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_default_region: ${{ secrets.AWS_REGION }}
+
+        aws_redis_enable: true
+        aws_redis_port: 6379
+        aws_redis_multi_az_enabled: false
+        aws_redis_apply_immediately: true
+        aws_vpc_id: ${{ needs.deploy-rds.outputs.aws_vpc_id }}
+        aws_vpc_subnet_id: ${{ needs.deploy-rds.outputs.private_subnet_id }}
+        aws_redis_allowed_security_groups: ${{ needs.deploy-rds.outputs.ec2_sg_id }}
+
+
+
+
+  
+  deploy-ec2:
+    runs-on: ubuntu-latest
+    needs: 
+     - deploy-rds
+     - deploy-elascticache
+    outputs:
+      instance-id: ${{ steps.create-ec2.outputs.instance-id }}
     env:  # Set secrets as environment variables for the job
-      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-      AWS_REGION: ${{ secrets.AWS_REGION }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      REDIS_HOST: 
+      DB_NAME: mydb
+      DB_USER: dbuser
+      DB_PORT: 5432
+      REDIS_PORT: 6379
+      REDIS_DB: 0
       CORS_ALLOWED_ORIGINS: https://d2xytvnh88jebv.cloudfront.net
-
+      
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -38,6 +141,20 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
 
+    - name: Check and Create SSH Key Pair if Not Exists
+      id: create_key
+      run: |
+        if 
+          aws ec2 describe-key-pairs --key-names key 2>/dev/null; then
+          echo "Key pair 'key' already exists. Skipping creation."
+        else
+          aws ec2 create-key-pair --key-name key --query 'KeyMaterial' --output text > github-action-key.pem
+          chmod 400 github-action-key.pem
+        fi
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      
     - name: Create IAM Role
       run: |
         aws iam get-role --role-name ecr-pull-role || \
@@ -62,6 +179,109 @@ jobs:
               if [[ "$ROLES_ATTACHED" != *"$ROLE_NAME"* ]]; then
                 aws iam add-role-to-instance-profile --instance-profile-name project1-ecr-access --role-name ecr-pull-role
               fi
+
+    - name: Setup EC2
+      id: create-ec2
+      uses: truemark/aws-ec2-run-instance-action@v5
+      with:
+        security-group-id: ${{ needs.deploy-rds.outputs.ec2_sg_id }}
+        subnet-id: "${{ needs.deploy-rds.outputs.public_subnet_id }}"
+        name: project1-backend
+        region: ${{ secrets.AWS_REGION }}
+        image-id: "ami-08eb150f611ca277f"
+        instance-type: "t3.micro"
+        instance-profile: "project1-ecr-access"
+        volume-size: 8
+        associate-public-ip-address: true
+        key-name: key
+        terminate-on-post: false
+        user-data: |
+          #!/bin/bash
+          apt update -y
+          apt install -y docker.io awscli
+          usermod -aG docker ubuntu
+          systemctl restart docker
+          # newgrp docker
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          cd /home/ubuntu/
+          git clone https://github.com/vladskvortsov/mind.git
+          cd mind/project1/
+          echo "SECRET_KEY=my-secret-key
+          DEBUG=False
+
+          DB_NAME=${{ env.DB_NAME }}
+          DB_USER=${{ env.DB_USER }}
+          # DB_PASSWORD=mypassword
+          DB_HOST=${{ needs.deploy-rds.outputs.db_endpoint }}
+          DB_PORT=${{ env.DB_PORT }}
+
+          REDIS_HOST=${{ needs.deploy-elascticache.outputs.redis_connection_string_secret }}
+          REDIS_PORT=${{ env.REDIS_PORT }}
+          REDIS_DB=${{ env.REDIS_DB }}
+          #REDIS_PASSWORD=mypassword
+
+          CORS_ALLOWED_ORIGINS=${{ env.CORS_ALLOWED_ORIGINS }}" > vars.env
+ 
+          echo '
+          # version: '3.8'
+          services:
+            backend_rds:
+              env_file:
+              - vars.env
+              image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
+              container_name: backend_rds
+              ports:
+                - "8000:8000"
+              networks:
+                - backend
+              entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8000"]
+
+            backend_redis:
+              env_file:
+              - vars.env
+              image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
+              container_name: backend_redis
+              ports:
+                - "8003:8003"
+              networks:
+                - backend
+              entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8003"]
+
+          networks:
+            backend:
+              driver: bridge' > docker-compose.yml
+          docker compose up -d
+
+    - name: Attach Security Groups to EC2 Instance
+      run: |
+        aws ec2 modify-instance-attribute \
+          --instance-id ${{ steps.create-ec2.outputs.instance-id }} \
+          --groups ${{ needs.deploy-rds.outputs.db_sg_id }},${{ needs.deploy-elascticache.outputs.redis_sg_id }},${{ needs.deploy-rds.outputs.ec2_sg_id }}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     # - name: Check and Create SSH Key Pair if Not Exists
     #   id: create_key
@@ -168,84 +388,72 @@ jobs:
     #       echo "vars=$VARS" >> $GITHUB_ENV
     #       echo "$vars"
 
-    - id: deploy
-      name: Deploy EC2 and RDS
-      uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
-      with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws_default_region: ${{ secrets.AWS_REGION }}
 
-        ansible_start_docker_timeout: 600
 
-        env_ghv: |
-                SECRET_KEY=my-secret-key
-                DEBUG=False
 
-                #### AWS values
-                AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
-                AWS_REGION=${{ secrets.AWS_REGION }}
-                AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-                AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    # - id: deploy
+    #   name: Deploy EC2 and RDS
+    #   uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
+    #   with:
+    #     aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #     aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #     aws_default_region: ${{ secrets.AWS_REGION }}
+
+    #     ansible_start_docker_timeout: 600
+
+    #     env_ghv: |
+    #             SECRET_KEY=my-secret-key
+    #             DEBUG=False
+
+    #             #### AWS values
+    #             AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
+    #             AWS_REGION=${{ secrets.AWS_REGION }}
+    #             AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+    #             AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
                 
-                #### Redis values
-                REDIS_HOST=${{env.REDIS_HOST}}
-                REDIS_PORT=6379
-                REDIS_DB=0
-                #REDIS_PASSWORD=mypassword
-                CORS_ALLOWED_ORIGINS=${{env.CORS_ALLOWED_ORIGINS}}
-        # env_repo: /home/runner/vars.env
-        aws_vpc_create: true
-        aws_vpc_name: project1-vpc
-        # aws_vpc_cidr_block: 10.0.0.0/16
-        aws_vpc_public_subnets: 10.10.10.0/24,10.10.40.0/24
-        aws_vpc_private_subnets: 10.10.20.0/24,10.10.30.0/24
-        aws_vpc_availability_zones:  ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
-        aws_elb_create: false
-        # aws_elb_app_port: 8000,8003,8080
-        # aws_elb_listen_port: 8000,8003,80
-        # # aws_elb_healthcheck: "HTTP:8080"
+    #             #### Redis values
+    #             REDIS_HOST=${{env.REDIS_HOST}}
+    #             REDIS_PORT=6379
+    #             REDIS_DB=0
+    #             #REDIS_PASSWORD=mypassword
+    #             CORS_ALLOWED_ORIGINS=${{env.CORS_ALLOWED_ORIGINS}}
+    #     # env_repo: /home/runner/vars.env
+    #     aws_vpc_create: true
+    #     aws_vpc_name: project1-vpc
+    #     # aws_vpc_cidr_block: 10.0.0.0/16
+    #     aws_vpc_public_subnets: 10.10.10.0/24,10.10.40.0/24
+    #     aws_vpc_private_subnets: 10.10.20.0/24,10.10.30.0/24
+    #     aws_vpc_availability_zones:  ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
+    #     aws_elb_create: false
+    #     # aws_elb_app_port: 8000,8003,8080
+    #     # aws_elb_listen_port: 8000,8003,80
+    #     # # aws_elb_healthcheck: "HTTP:8080"
 
-        aws_ec2_instance_create: true
-        aws_ec2_instance_type: t3.micro
-        aws_ec2_instance_root_vol_size: 8
-        aws_ec2_port_list: 8000,8003,8080
-        aws_ec2_iam_instance_profile: project1-ecr-access
-        docker_repo_app_directory: ./project1/
-        aws_ec2_user_data_file: ./project1/setup.sh
-        aws_ec2_create_keypair_sm: false
+    #     aws_ec2_instance_create: true
+    #     aws_ec2_instance_type: t3.micro
+    #     aws_ec2_instance_root_vol_size: 8
+    #     aws_ec2_port_list: 8000,8003,8080
+    #     aws_ec2_iam_instance_profile: project1-ecr-access
+    #     docker_repo_app_directory: ./project1/
+    #     aws_ec2_user_data_file: ./project1/setup.sh
+    #     aws_ec2_create_keypair_sm: false
 
-        aws_rds_db_enable: true        
-        aws_rds_db_name: mydb
-        aws_rds_db_user: dbuser
-        aws_rds_db_engine: postgres
-        aws_rds_db_port: 5432
-        aws_rds_db_allocated_storage: 20
-        aws_rds_db_instance_class: db.t3.micro
-        aws_rds_db_final_snapshot:
-        aws_rds_db_multi_az: false
-        aws_rds_db_apply_immediately: true
+    #     aws_rds_db_enable: true        
+    #     aws_rds_db_name: mydb
+    #     aws_rds_db_user: dbuser
+    #     aws_rds_db_engine: postgres
+    #     aws_rds_db_port: 5432
+    #     aws_rds_db_allocated_storage: 20
+    #     aws_rds_db_instance_class: db.t3.micro
+    #     aws_rds_db_final_snapshot:
+    #     aws_rds_db_multi_az: false
+    #     aws_rds_db_apply_immediately: true
 
 # tf_stack_destroy: true
 # tf_state_bucket_destroy: true
 
-    - name: Retrieve Public and Private Subnet IDs
-      if: always()
-      id: subnets  # Step ID for accessing outputs
-      run: |
-        ALL_SUBNETS=$(aws ec2 describe-subnets \
-          --filters "Name=vpc-id,Values=${{ steps.deploy.outputs.aws_vpc_id }}" \
-          --query "Subnets[].[SubnetId, MapPublicIpOnLaunch]" \
-          --output json)
 
-        # Separate subnets into public and private based on MapPublicIpOnLaunch
-          PUBLIC_SUBNET=$(echo $ALL_SUBNETS | jq -r '.[] | select(.[1] == true) | .[0]' | head -n 1)
-          PRIVATE_SUBNET=$(echo $ALL_SUBNETS | jq -r '.[] | select(.[1] == false) | .[0]' | head -n 1)
-
-        # Store results in environment variables for use in subsequent steps
-        echo "public_subnet_id=$PUBLIC_SUBNET" >> $GITHUB_OUTPUT
-        echo "private_subnet_id=$PRIVATE_SUBNET" >> $GITHUB_OUTPUT
-        # echo "$vars"
 
     # - name: SM
     #   uses: aws-actions/aws-secretsmanager-get-secrets@v2
@@ -256,28 +464,6 @@ jobs:
     #     parse-json-secrets: true
 
 
-
-    # - name: Sync files to S3
-    #   run: |
-    #     aws s3 sync /home/runner/work/mind/mind/ s3://vladskvortsov-mind-master-tf-state --delete
-
-
-
-
-
-    # - name: Run SSH Command
-    #   id: ssh-command
-    #   uses: leonowski/ec2-ssh-ghactions@v1
-    #   with:
-    #     ec2_instance_id: i-083604d67c3c4f4bf
-    #     region: ${{ secrets.AWS_REGION }}
-    #     username: ubuntu
-    #     command: |
-    #          sudo apt install -y unzip docker awscli
-
-    # - name: Output
-    #   run: |
-    #     echo -e "${{ steps.ssh-command.outputs.command_output }}"
 
 
 
@@ -292,16 +478,6 @@ jobs:
 
 
 
-
-    # - name: Setup SSH for EC2
-    #   uses: omarhosny206/setup-ssh-for-ec2@v1.0.0
-    #   with:
-    #       EC2_SSH_PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-    #       EC2_URL: 13.60.4.233
-
-    # # then you can run commands/scripts directly on the EC2 instance e.g.:
-    # - name: Create a new file on the EC2 instance with "hello-world"
-    #   run: ssh -o StrictHostKeyChecking=no ubuntu@13.60.4.233 "echo "hello-world" >> new_file.txt"
 
 
 
@@ -322,127 +498,8 @@ jobs:
     #           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
     #           docker compose up -d
 
-  deploy-elascticache:
-    runs-on: ubuntu-latest
-    needs: deploy-rds
-    outputs:
-      redis_connection_string_secret: ${{ steps.create-redis.outputs.redis_connection_string_secret }}
-      redis_sg_id: ${{ steps.create-redis.outputs.redis_sg_id }}
-    steps:
-    - name: Create a Redis DB
-      id: create-redis
-      uses: bitovi/github-actions-deploy-redis-db@v0.1.1
-      with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws_default_region: ${{ secrets.AWS_REGION }}
-
-        aws_redis_enable: true
-        aws_redis_port: 6379
-        aws_redis_multi_az_enabled: false
-        aws_redis_apply_immediately: true
-        aws_vpc_id: ${{ needs.deploy-rds.outputs.aws_vpc_id }}
-        aws_vpc_subnet_id: ${{ needs.deploy-rds.outputs.private_subnet_id }}
-        aws_redis_allowed_security_groups: ${{ needs.deploy-rds.outputs.ec2_sg_id }}
-  
-
 
   
-  # deploy-ec2:
-  #   runs-on: ubuntu-latest
-  #   needs: 
-  #    - deploy-rds
-  #    - deploy-elascticache
-  #   outputs:
-  #     instance-id: ${{ steps.create-ec2.outputs.instance-id }}
-  #   steps:
-        
-
-    # - name: Setup EC2
-    #   id: create-ec2
-    #   uses: truemark/aws-ec2-run-instance-action@v5
-    #   with:
-    #     security-group-id: ${{ needs.deploy-rds.outputs.ec2_sg_id }}
-    #     subnet-id: "${{ needs.deploy-rds.outputs.public_subnet_id }}"
-    #     name: project1-backend
-    #     region: ${{ secrets.AWS_REGION }}
-    #     image-id: "ami-08eb150f611ca277f"
-    #     instance-type: "t3.micro"
-    #     instance-profile: "project1-ecr-access"
-    #     volume-size: 8
-    #     associate-public-ip-address: true
-    #     key-name: key
-    #     terminate-on-post: false
-    #     user-data: |
-    #       #!/bin/bash
-    #       apt update -y
-    #       apt install -y unzip docker.io docker-compose git
-    #       curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-    #       unzip awscliv2.zip
-    #       ./aws/install
-    #       usermod -aG docker ubuntu
-    #       systemctl restart docker
-    #       # newgrp docker
-    #       sudo -u ubuntu aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #       sudo -u ubuntu aws configure set aws_secret_access_key  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    #       sudo -u ubuntu aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-    #       cd /home/ubuntu/
-    #       git clone https://github.com/vladskvortsov/mind.git
-    #       cd mind/project1/
-    #       echo "SECRET_KEY=my-secret-key
-    #       DEBUG=False
-
-    #       DB_NAME=mydb
-    #       DB_USER=dbuser
-    #       # DB_PASSWORD=mypassword
-    #       DB_HOST=${{ needs.deploy-rds.outputs.db_endpoint }}
-    #       DB_PORT=5432
-
-    #       REDIS_HOST=${{ needs.deploy-elascticache.outputs.redis_connection_string_secret }}
-    #       REDIS_PORT=6379
-    #       REDIS_DB=0
-    #       #REDIS_PASSWORD=mypassword
-
-    #       CORS_ALLOWED_ORIGINS=http://d2xytvnh88jebv.cloudfront.net" > vars.env
- 
-    #       echo '
-    #       # version: '3.8'
-    #       services:
-    #         backend_rds:
-    #           env_file:
-    #           - vars.env
-    #           image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-rds
-    #           container_name: backend_rds
-    #           ports:
-    #             - "8000:8000"
-    #           networks:
-    #             - backend
-    #           entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8000"]
-
-    #         backend_redis:
-    #           env_file:
-    #           - vars.env
-    #           image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/project1-backend:backend-redis
-    #           container_name: backend_redis
-    #           ports:
-    #             - "8003:8003"
-    #           networks:
-    #             - backend
-    #           entrypoint: ["sh", "-c", "sleep 10 && python manage.py runserver 0.0.0.0:8003"]
-
-    #       networks:
-    #         backend:
-    #           driver: bridge' > docker-compose.yml
-    #       docker-compose up -d
-
-    # - name: Attach Security Groups to EC2 Instance
-    #   run: |
-    #     aws ec2 modify-instance-attribute \
-    #       --instance-id ${{ steps.create-ec2.outputs.instance-id }} \
-    #       --groups ${{ needs.deploy-rds.outputs.db_sg_id }},${{ needs.deploy-elascticache.outputs.redis_sg_id }},${{ needs.deploy-rds.outputs.ec2_sg_id }}
-
-
-
 
 
 

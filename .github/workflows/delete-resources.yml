@@ -3,7 +3,7 @@ on:
   workflow_dispatch:  # Trigger workflow manually
 
 jobs:
-  delete_vpc:
+  delete_resources:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,50 +15,18 @@ jobs:
         aws-region: ${{ secrets.AWS_REGION }}
 
 
+    - id: deploy
+      name: Deploy EC2 and RDS
+      uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_default_region: ${{ secrets.AWS_REGION }}
 
-    # Step 2: Delete NAT Gateways
-    - name: Delete NAT Gateways
-      run: |
-        NAT_GATEWAY_IDS=$(aws ec2 describe-nat-gateways --filter "Name=vpc-id,Values=${{ secrets.VPC_ID }}" --query 'NatGateways[*].NatGatewayId' --output text)
-        for GATEWAY_ID in $NAT_GATEWAY_IDS; do
-          aws ec2 delete-nat-gateway --nat-gateway-id $GATEWAY_ID
-        done
-        aws ec2 wait nat-gateway-deleted --nat-gateway-ids $NAT_GATEWAY_IDS
 
-    # Step 3: Detach and Delete Internet Gateway
-    - name: Detach and Delete Internet Gateway
-      run: |
-        IGW_ID=$(aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=${{ secrets.VPC_ID }}" --query 'InternetGateways[*].InternetGatewayId' --output text)
-        if [ -n "$IGW_ID" ]; then
-          aws ec2 detach-internet-gateway --internet-gateway-id $IGW_ID --vpc-id ${{ secrets.VPC_ID }}
-          aws ec2 delete-internet-gateway --internet-gateway-id $IGW_ID
-        fi
+        aws_vpc_create: false
+        aws_ec2_instance_create: false
+        aws_rds_db_enable: false       
 
-    # Step 4: Delete Subnets
-    - name: Delete Subnets
-      run: |
-        SUBNET_IDS=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=${{ secrets.VPC_ID }}" --query 'Subnets[*].SubnetId' --output text)
-        for SUBNET_ID in $SUBNET_IDS; do
-          aws ec2 delete-subnet --subnet-id $SUBNET_ID
-        done
-
-    # Step 5: Delete Route Tables (excluding main route table)
-    - name: Delete Route Tables
-      run: |
-        ROUTE_TABLE_IDS=$(aws ec2 describe-route-tables --filters "Name=vpc-id,Values=${{ secrets.VPC_ID }}" --query 'RouteTables[?Associations[0].Main!=`true`].RouteTableId' --output text)
-        for ROUTE_TABLE_ID in $ROUTE_TABLE_IDS; do
-          aws ec2 delete-route-table --route-table-id $ROUTE_TABLE_ID
-        done
-
-    # Step 6: Delete Security Groups (excluding default)
-    - name: Delete Security Groups
-      run: |
-        SECURITY_GROUP_IDS=$(aws ec2 describe-security-groups --filters "Name=vpc-id,Values=${{ secrets.VPC_ID }}" --query 'SecurityGroups[?GroupName!=`default`].GroupId' --output text)
-        for SG_ID in $SECURITY_GROUP_IDS; do
-          aws ec2 delete-security-group --group-id $SG_ID
-        done
-
-    # Step 7: Delete the VPC
-    - name: Delete VPC
-      run: |
-        aws ec2 delete-vpc --vpc-id ${{ secrets.VPC_ID }}
+        tf_stack_destroy: true
+        tf_state_bucket_destroy: true
