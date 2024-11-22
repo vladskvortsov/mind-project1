@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest 
     outputs:
       aws_vpc_id: ${{ steps.deploy.outputs.aws_vpc_id }}
-      ec2_sg_id: ${{ steps.deploy.outputs.ec2_sg_id }}
+      ec2_sg_id: ${{ steps.create_sg.outputs.ec2_sg_id }}
       db_sg_id: ${{ steps.deploy.outputs.db_sg_id }}
       db_endpoint: ${{ steps.deploy.outputs.db_endpoint }}
       private_subnet_id: ${{ steps.subnets.outputs.private_subnet_id }}
@@ -61,13 +61,13 @@ jobs:
 
     - name: Add Ingress Rules
       run: |
-        aws ec2 authorize-security-group-ingress --group-id ${{ steps.deploy.outputs.ec2_sg_id }} \
+        aws ec2 authorize-security-group-ingress --group-id ${{ steps.create_sg.outputs.ec2_sg_id }} \
           --protocol tcp --port 22 --cidr 0.0.0.0/0
-        aws ec2 authorize-security-group-ingress --group-id ${{ steps.deploy.outputs.ec2_sg_id }} \
+        aws ec2 authorize-security-group-ingress --group-id ${{ steps.create_sg.outputs.ec2_sg_id }} \
           --protocol tcp --port 8000 --cidr 0.0.0.0/0
-        aws ec2 authorize-security-group-ingress --group-id ${{ steps.deploy.outputs.ec2_sg_id }} \
+        aws ec2 authorize-security-group-ingress --group-id ${{ steps.create_sg.outputs.ec2_sg_id }} \
           --protocol tcp --port 8003 --cidr 0.0.0.0/0
-        echo "Ingress rules added to security group: ${{ steps.deploy.outputs.ec2_sg_id }}"
+        echo "Ingress rules added to security group: ${{ steps.create_sg.outputs.ec2_sg_id }}"
   
 
     - name: Retrieve Public and Private Subnet IDs
