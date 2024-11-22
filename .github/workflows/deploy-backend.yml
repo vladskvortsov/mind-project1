@@ -32,7 +32,7 @@ jobs:
         # aws_vpc_cidr_block: 10.0.0.0/16
         aws_vpc_public_subnets: 10.10.10.0/24,10.10.40.0/24
         aws_vpc_private_subnets: 10.10.20.0/24,10.10.30.0/24
-        aws_vpc_availability_zones:  ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
+        aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
 
         aws_rds_db_enable: true        
         aws_rds_db_name: mydb
