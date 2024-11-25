@@ -24,7 +24,7 @@ jobs:
       DB_USER: dbuser
       DB_PORT: 5432
       DB_INSTANCE_IDENTIFIER: mydb
-      DB_PASSWORD: mypassword
+      DB_PASSWORD: $(openssl rand -base64 12)
 
 
     steps:
