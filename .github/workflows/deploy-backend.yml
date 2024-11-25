@@ -124,7 +124,6 @@ jobs:
           --port ${{ env.DB_PORT }} \
           --no-multi-az \
           --backup-retention-period 0 # No automated backups
-          --master-user-password ${{ env.DB_PASSWORD }} 
 
 
     - name: Retrieve RDS Endpoint
