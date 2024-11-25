@@ -179,24 +179,34 @@ jobs:
 
 
 
-    - name: Create RDS Instance
+    - name: Create or Use Existing RDS Instance
       id: create_rds
       run: |
+        # Check if the RDS instance already exists
+        RDS_INSTANCE=$(aws rds describe-db-instances --db-instance-identifier ${{ env.DB_INSTANCE_IDENTIFIER }} --query "DBInstances[0].DBInstanceIdentifier" --output text 2>/dev/null || echo "None")
+        
+        if [ "$RDS_INSTANCE" == "None" ]; then
+          echo "RDS instance does not exist. Creating RDS instance..."
+          
+          # Create the RDS instance
+          aws rds create-db-instance \
+            --db-instance-identifier ${{ env.DB_INSTANCE_IDENTIFIER }} \
+            --db-instance-class db.t3.micro \
+            --engine postgres \
+            --db-name ${{ env.DB_NAME }} \
+            --master-username ${{ env.DB_USER }} \
+            --master-user-password ${{ env.DB_PASSWORD }} \
+            --allocated-storage 20 \
+            --vpc-security-group-ids ${{ steps.create_rds_sg.outputs.db_sg_id }} \
+            --db-subnet-group-name "private-subnets-group" \
+            --port ${{ env.DB_PORT }} \
+            --no-multi-az \
+            --backup-retention-period 0 # No automated backups
 
-        # Create the RDS instance
-        aws rds create-db-instance \
-          --db-instance-identifier ${{ env.DB_INSTANCE_IDENTIFIER }} \
-          --db-instance-class db.t3.micro \
-          --engine postgres \
-          --db-name ${{ env.DB_NAME }} \
-          --master-username ${{ env.DB_USER }} \
-          --master-user-password ${{ env.DB_PASSWORD }} \
-          --allocated-storage 20 \
-          --vpc-security-group-ids ${{ steps.create_rds_sg.outputs.db_sg_id }} \
-          --db-subnet-group-name "private-subnets-group" \
-          --port ${{ env.DB_PORT }} \
-          --no-multi-az \
-          --backup-retention-period 0 # No automated backups
+          echo "RDS instance created: ${{ env.DB_INSTANCE_IDENTIFIER }}"
+        else
+          echo "RDS instance already exists: $RDS_INSTANCE"
+        fi
 
 
 
