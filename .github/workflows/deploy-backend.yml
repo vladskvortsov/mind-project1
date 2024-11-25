@@ -123,7 +123,6 @@ jobs:
           --db-subnet-group-name "private-subnets-group" \
           --port ${{ env.DB_PORT }} \
           --no-multi-az \
-          --apply-immediately \
           --backup-retention-period 0 # No automated backups
           # --master-user-password ${{ env.DB_PASSWORD }} 
 
