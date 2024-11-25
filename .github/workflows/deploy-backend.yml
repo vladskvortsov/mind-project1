@@ -218,8 +218,9 @@ jobs:
         echo "RDS Endpoint: $ENDPOINT"
         echo "db_endpoint=$ENDPOINT" >> $GITHUB_OUTPUT
 
-
-
+    - name: Retrieve RDS Endpoint
+      run: |
+          echo "${{ steps.get_endpoint.outputs.db_endpoint }}"
 
 
 
