@@ -36,7 +36,7 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
-        
+
     - name: Create VPC
       id: create_vpc
       run: |
@@ -78,7 +78,7 @@ jobs:
       run: |
         PUBLIC_RT=$(aws ec2 create-route-table --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} \
           --query 'RouteTable.RouteTableId' --output text)
-        aws ec2 create-route --route-table-id $PUBLIC_RT --destination-cidr-block 0.0.0.0/0 --gateway-id ${{ env.igw_id }}
+        aws ec2 create-route --route-table-id $PUBLIC_RT --destination-cidr-block 0.0.0.0/0 --gateway-id ${{ steps.create_igw.outputs.igw_id }}
         aws ec2 associate-route-table --route-table-id $PUBLIC_RT --subnet-id ${{ steps.subnets.outputs.public_subnet_id }}
         aws ec2 associate-route-table --route-table-id $PUBLIC_RT --subnet-id ${{ steps.subnets.outputs.public_subnet_id2 }}
         echo "PUBLIC_RT=$PUBLIC_RT" >> $GITHUB_ENV
