@@ -340,7 +340,7 @@ jobs:
             --engine redis \
             --num-cache-nodes 1 \
             --cache-subnet-group-name private-subnets-group \
-            --security-group-ids ${{ steps.create_redis_sg.outputs.elasticache_sg_id }} \
+            --security-group-ids ${{ steps.create_redis_sg.outputs.redis_sg_id }} \
             --port 6379 \
             --engine-version 6.x \
             --az-mode single-az
@@ -362,7 +362,7 @@ jobs:
         
          echo "ElastiCache endpoint: $ELASTICACHE_ENDPOINT"
         echo "elasticache_endpoint=$ELASTICACHE_ENDPOINT" >> $GITHUB_OUTPUT
-
+        echo "${{ needs.deploy-rds.outputs.db_endpoint }}"
 
   
   deploy-ec2:
