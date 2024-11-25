@@ -118,7 +118,7 @@ jobs:
           --engine postgres \
           --db-name ${{ env.DB_NAME }} \
           --master-username ${{ env.DB_USER }} \
-          --master-user-password ${{ env.DB_PASSWORD }} 
+          --master-user-password ${{ env.DB_PASSWORD }} \
           --allocated-storage 20 \
           --vpc-security-group-ids ${{ steps.create_rds_sg.outputs.db_sg_id }} \
           --db-subnet-group-name "private-subnets-group" \
