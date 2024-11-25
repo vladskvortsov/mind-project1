@@ -37,69 +37,141 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Create VPC
+    - name: Create or Use Existing VPC
       id: create_vpc
       run: |
-        VPC_ID=$(aws ec2 create-vpc --cidr-block 10.10.0.0/16 --query 'Vpc.VpcId' --output text)
-        aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-support
-        aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-hostnames
+        VPC_ID=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=project1-vpc --query "Vpcs[0].VpcId" --output text 2>/dev/null || echo "None")
+        if [ "$VPC_ID" == "None" ]; then
+          VPC_ID=$(aws ec2 create-vpc --cidr-block 10.10.0.0/16 --query 'Vpc.VpcId' --output text)
+          aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-support
+          aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-hostnames
+          aws ec2 create-tags --resources $VPC_ID --tags Key=Name,Value=project1-vpc
+          echo "Created VPC with ID: $VPC_ID"
+        else
+          echo "Using existing VPC with ID: $VPC_ID"
+        fi
         echo "aws_vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
 
-    - name: Create Public Subnets
+    - name: Create Public and Private Subnets
       id: subnets
       run: |
-        SUBNET_PUBLIC_1=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }}\
-          --cidr-block 10.10.1.0/24 --availability-zone ${{ secrets.AWS_REGION }}a \
-          --query 'Subnet.SubnetId' --output text)
-        SUBNET_PUBLIC_2=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} \
-          --cidr-block 10.10.2.0/24 --availability-zone ${{ secrets.AWS_REGION }}b \
-          --query 'Subnet.SubnetId' --output text)
-        echo "public_subnet_id=$SUBNET_PUBLIC_1" >> $GITHUB_OUTPUT
-        echo "public_subnet_id2=$SUBNET_PUBLIC_2" >> $GITHUB_OUTPUT
+        PUBLIC_SUBNET_1=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=${{ steps.create_vpc.outputs.aws_vpc_id }} Name=cidr-block,Values=10.10.1.0/24 --query "Subnets[0].SubnetId" --output text 2>/dev/null || echo "None")
+        if [ "$PUBLIC_SUBNET_1" == "None" ]; then
+          PUBLIC_SUBNET_1=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} \
+            --cidr-block 10.10.1.0/24 --availability-zone ${{ secrets.AWS_REGION }}a \
+            --query 'Subnet.SubnetId' --output text)
+          echo "Created Public Subnet 1: $PUBLIC_SUBNET_1"
+        fi
 
-        SUBNET_PRIVATE_1=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} \
-          --cidr-block 10.10.3.0/24 --availability-zone ${{ secrets.AWS_REGION }}a \
-          --query 'Subnet.SubnetId' --output text)
-        SUBNET_PRIVATE_2=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} \
-          --cidr-block 10.10.4.0/24 --availability-zone ${{ secrets.AWS_REGION }}b \
-          --query 'Subnet.SubnetId' --output text)
-        echo "private_subnet_id=$SUBNET_PRIVATE_1" >> $GITHUB_OUTPUT
-        echo "private_subnet_id2=$SUBNET_PRIVATE_2" >> $GITHUB_OUTPUT
+        PUBLIC_SUBNET_2=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=${{ steps.create_vpc.outputs.aws_vpc_id }} Name=cidr-block,Values=10.10.2.0/24 --query "Subnets[0].SubnetId" --output text 2>/dev/null || echo "None")
+        if [ "$PUBLIC_SUBNET_2" == "None" ]; then
+          PUBLIC_SUBNET_2=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} \
+            --cidr-block 10.10.2.0/24 --availability-zone ${{ secrets.AWS_REGION }}b \
+            --query 'Subnet.SubnetId' --output text)
+          echo "Created Public Subnet 2: $PUBLIC_SUBNET_2"
+        fi
 
-    - name: Create Internet Gateway
+        PRIVATE_SUBNET_1=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=${{ steps.create_vpc.outputs.aws_vpc_id }} Name=cidr-block,Values=10.10.3.0/24 --query "Subnets[0].SubnetId" --output text 2>/dev/null || echo "None")
+        if [ "$PRIVATE_SUBNET_1" == "None" ]; then
+          PRIVATE_SUBNET_1=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} \
+            --cidr-block 10.10.3.0/24 --availability-zone ${{ secrets.AWS_REGION }}a \
+            --query 'Subnet.SubnetId' --output text)
+          echo "Created Private Subnet 1: $PRIVATE_SUBNET_1"
+        fi
+
+        PRIVATE_SUBNET_2=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=${{ steps.create_vpc.outputs.aws_vpc_id }} Name=cidr-block,Values=10.10.4.0/24 --query "Subnets[0].SubnetId" --output text 2>/dev/null || echo "None")
+        if [ "$PRIVATE_SUBNET_2" == "None" ]; then
+          PRIVATE_SUBNET_2=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} \
+            --cidr-block 10.10.4.0/24 --availability-zone ${{ secrets.AWS_REGION }}b \
+            --query 'Subnet.SubnetId' --output text)
+          echo "Created Private Subnet 2: $PRIVATE_SUBNET_2"
+        fi
+
+        echo "public_subnet_id=$PUBLIC_SUBNET_1" >> $GITHUB_OUTPUT
+        echo "public_subnet_id2=$PUBLIC_SUBNET_2" >> $GITHUB_OUTPUT
+        echo "private_subnet_id=$PRIVATE_SUBNET_1" >> $GITHUB_OUTPUT
+        echo "private_subnet_id2=$PRIVATE_SUBNET_2" >> $GITHUB_OUTPUT
+
+    - name: Create or Use Existing Internet Gateway
       id: create_igw
       run: |
-        IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
-        aws ec2 attach-internet-gateway --internet-gateway-id $IGW_ID --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }}
+        IGW_ID=$(aws ec2 describe-internet-gateways --filters Name=attachment.vpc-id,Values=${{ steps.create_vpc.outputs.aws_vpc_id }} --query "InternetGateways[0].InternetGatewayId" --output text 2>/dev/null || echo "None")
+        if [ "$IGW_ID" == "None" ]; then
+          IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
+          aws ec2 attach-internet-gateway --internet-gateway-id $IGW_ID --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }}
+          echo "Created Internet Gateway: $IGW_ID"
+        else
+          echo "Using existing Internet Gateway: $IGW_ID"
+        fi
         echo "igw_id=$IGW_ID" >> $GITHUB_OUTPUT
 
-    - name: Create Route Tables
+    - name: Create or Use Existing Public Route Table
       id: route_tables
       run: |
-        PUBLIC_RT=$(aws ec2 create-route-table --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} \
-          --query 'RouteTable.RouteTableId' --output text)
-        aws ec2 create-route --route-table-id $PUBLIC_RT --destination-cidr-block 0.0.0.0/0 --gateway-id ${{ steps.create_igw.outputs.igw_id }}
+        PUBLIC_RT=$(aws ec2 describe-route-tables --filters Name=vpc-id,Values=${{ steps.create_vpc.outputs.aws_vpc_id }} Name=tag:Name,Values=Public-Route-Table --query "RouteTables[0].RouteTableId" --output text 2>/dev/null || echo "None")
+        if [ "$PUBLIC_RT" == "None" ]; then
+          PUBLIC_RT=$(aws ec2 create-route-table --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} --query 'RouteTable.RouteTableId' --output text)
+          aws ec2 create-tags --resources $PUBLIC_RT --tags Key=Name,Value=Public-Route-Table
+          aws ec2 create-route --route-table-id $PUBLIC_RT --destination-cidr-block 0.0.0.0/0 --gateway-id ${{ steps.create_igw.outputs.igw_id }}
+          echo "Created Public Route Table: $PUBLIC_RT"
+        else
+          echo "Using existing Public Route Table: $PUBLIC_RT"
+        fi
+
+        # Associate route table with public subnets
         aws ec2 associate-route-table --route-table-id $PUBLIC_RT --subnet-id ${{ steps.subnets.outputs.public_subnet_id }}
         aws ec2 associate-route-table --route-table-id $PUBLIC_RT --subnet-id ${{ steps.subnets.outputs.public_subnet_id2 }}
-        echo "PUBLIC_RT=$PUBLIC_RT" >> $GITHUB_ENV
+        echo "PUBLIC_RT=$PUBLIC_RT" >> $GITHUB_OUTPUT
 
     - name: Create Security Group for RDS
       id: create_rds_sg
       run: |
-        RDS_SG=$(aws ec2 create-security-group --group-name RDS-Security-Group \
-          --description "Security group for RDS" --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} --query 'GroupId' --output text)
-        aws ec2 authorize-security-group-ingress --group-id $RDS_SG \
-          --protocol tcp --port 5432 --cidr 0.0.0.0/0
+        RDS_SG=$(aws ec2 describe-security-groups --filters Name=group-name,Values=RDS-Security-Group Name=vpc-id,Values=${{ steps.create_vpc.outputs.aws_vpc_id }} --query "SecurityGroups[0].GroupId" --output text 2>/dev/null || echo "None")
+        if [ "$RDS_SG" == "None" ]; then
+          RDS_SG=$(aws ec2 create-security-group --group-name RDS-Security-Group \
+            --description "Security group for RDS" --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} --query 'GroupId' --output text)
+          aws ec2 authorize-security-group-ingress --group-id $RDS_SG \
+            --protocol tcp --port 5432 --cidr 0.0.0.0/0
+          echo "Created RDS Security Group: $RDS_SG"
+        else
+          echo "Using existing RDS Security Group: $RDS_SG"
+        fi
         echo "db_sg_id=$RDS_SG" >> $GITHUB_OUTPUT
 
     - name: Create DB Subnet Group
       id: db_subnet_group
       run: |
-        aws rds create-db-subnet-group \
-          --db-subnet-group-name "private-subnets-group" \
-          --db-subnet-group-description "Subnet group for RDS in private subnets" \
-          --subnet-ids ${{ steps.subnets.outputs.private_subnet_id }} ${{ steps.subnets.outputs.private_subnet_id2 }}
-        echo "DB Subnet Group created."
+        DB_SUBNET_GROUP=$(aws rds describe-db-subnet-groups --db-subnet-group-name private-subnets-group --query "DBSubnetGroups[0].DBSubnetGroupName" --output text 2>/dev/null || echo "None")
+        if [ "$DB_SUBNET_GROUP" == "None" ]; then
+          aws rds create-db-subnet-group \
+            --db-subnet-group-name "private-subnets-group" \
+            --db-subnet-group-description "Subnet group for RDS in private subnets" \
+            --subnet-ids ${{ steps.subnets.outputs.private_subnet_id }} ${{ steps.subnets.outputs.private_subnet_id2 }}
+          echo "Created DB Subnet Group: private-subnets-group"
+        else
+          echo "Using existing DB Subnet Group: $DB_SUBNET_GROUP"
+        fi
+
+    - name: Create or Use Existing EC2 Security Group
+      id: create_sg
+      run: |
+        SG_ID=$(aws ec2 describe-security-groups --filters Name=group-name,Values=EC2-SG Name=vpc-id,Values=${{ steps.create_vpc.outputs.aws_vpc_id }} --query "SecurityGroups[0].GroupId" --output text 2>/dev/null || echo "None")
+        if [ "$SG_ID" == "None" ]; then
+          SG_ID=$(aws ec2 create-security-group --group-name EC2-SG \
+            --description "Security group for EC2" --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} --query 'GroupId' --output text)
+          echo "Created EC2 Security Group: $SG_ID"
+
+        aws ec2 authorize-security-group-ingress --group-id $SG_ID \
+          --protocol tcp --port 22 --cidr 0.0.0.0/0
+        aws ec2 authorize-security-group-ingress --group-id $SG_ID \
+          --protocol tcp --port 8000 --cidr 0.0.0.0/0
+        aws ec2 authorize-security-group-ingress --group-id $SG_ID \
+          --protocol tcp --port 8003 --cidr 0.0.0.0/0
+        echo "Ingress rules added to security group: $SG_ID"
+        else
+          echo "Using existing EC2 Security Group: $SG_ID"
+        fi
+        echo "ec2_sg_id=$SG_ID" >> $GITHUB_OUTPUT
 
 
 
@@ -173,23 +245,8 @@ jobs:
     #     # tf_stack_destroy: true
     #     # tf_state_bucket_destroy: true
 
-    - name: Create EC2 Security Group
-      id: create_sg
-      run: |
-        SG_ID=$(aws ec2 create-security-group --group-name EC2-SG \
-        --description "Security group for EC2" --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} --query 'GroupId' --output text)
-        echo "Security group created with ID: $SG_ID"
-        echo "ec2_sg_id=$SG_ID" >> $GITHUB_OUTPUT
 
-    - name: Add Ingress Rules
-      run: |
-        aws ec2 authorize-security-group-ingress --group-id ${{ steps.create_sg.outputs.ec2_sg_id }} \
-          --protocol tcp --port 22 --cidr 0.0.0.0/0
-        aws ec2 authorize-security-group-ingress --group-id ${{ steps.create_sg.outputs.ec2_sg_id }} \
-          --protocol tcp --port 8000 --cidr 0.0.0.0/0
-        aws ec2 authorize-security-group-ingress --group-id ${{ steps.create_sg.outputs.ec2_sg_id }} \
-          --protocol tcp --port 8003 --cidr 0.0.0.0/0
-        echo "Ingress rules added to security group: ${{ steps.create_sg.outputs.ec2_sg_id }}"
+
   
 
     # - name: Retrieve Public and Private Subnet IDs
@@ -249,7 +306,7 @@ jobs:
       DB_NAME: mydb
       DB_USER: dbuser
       DB_PORT: 5432
-      DB_PASSWORD: Mypassword1
+      DB_PASSWORD: Mypassword11
       REDIS_PORT: 6379
       REDIS_DB: 0
       CORS_ALLOWED_ORIGINS: https://d2xytvnh88jebv.cloudfront.net
