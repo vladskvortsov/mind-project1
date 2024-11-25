@@ -11,49 +11,164 @@ jobs:
   deploy-rds:
     runs-on: ubuntu-latest 
     outputs:
-      aws_vpc_id: ${{ steps.deploy.outputs.aws_vpc_id }}
+      aws_vpc_id: ${{ steps.create_vpc.outputs.aws_vpc_id }}
       ec2_sg_id: ${{ steps.create_sg.outputs.ec2_sg_id }}
-      db_sg_id: ${{ steps.deploy.outputs.db_sg_id }}
-      db_endpoint: ${{ steps.deploy.outputs.db_endpoint }}
+      db_sg_id: ${{ steps.create_rds_sg.outputs.db_sg_id }}
+      db_endpoint: ${{ steps.get_endpoint.outputs.db_endpoint }}
       private_subnet_id: ${{ steps.subnets.outputs.private_subnet_id }}
+      private_subnet_id2: ${{ steps.subnets.outputs.private_subnet_id2 }}
       public_subnet_id: ${{ steps.subnets.outputs.public_subnet_id }}
+      igw_id: ${{ steps.create_igw.outputs.igw_id }}
+    env:  # Set secrets as environment variables for the job
+      DB_NAME: mydb
+      DB_USER: dbuser
+      DB_PORT: 5432
+      DB_INSTANCE_IDENTIFIER: mydb
+      # DB_PASSWORD: mypassword
+
+
     steps:
-    - id: deploy
-      uses: bitovi/github-actions-deploy-rds@v0.1.6
-      with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws_default_region: ${{ secrets.AWS_REGION }}
+    - name: Create VPC
+      id: create_vpc
+      run: |
+        VPC_ID=$(aws ec2 create-vpc --cidr-block 10.10.0.0/16 --query 'Vpc.VpcId' --output text)
+        aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-support
+        aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-hostnames
+        echo "aws_vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
 
-        aws_vpc_create: true
-        aws_vpc_name: project1-vpc
-        # aws_vpc_cidr_block: 10.0.0.0/16
-        aws_vpc_public_subnets: 10.10.10.0/24,10.10.40.0/24
-        aws_vpc_private_subnets: 10.10.20.0/24,10.10.30.0/24
-        aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
+    - name: Create Public Subnets
+      id: subnets
+      run: |
+        SUBNET_PUBLIC_1=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }}\
+          --cidr-block 10.10.1.0/24 --availability-zone ${{ secrets.AWS_REGION }}a \
+          --query 'Subnet.SubnetId' --output text)
+        SUBNET_PUBLIC_2=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} \
+          --cidr-block 10.10.2.0/24 --availability-zone ${{ secrets.AWS_REGION }}b \
+          --query 'Subnet.SubnetId' --output text)
+        echo "public_subnet_id=$SUBNET_PUBLIC_1" >> $GITHUB_OUTPUT
+        echo "public_subnet_id2=$SUBNET_PUBLIC_2" >> $GITHUB_OUTPUT
 
-        aws_rds_db_enable: false       
-        aws_rds_db_name: mydb
-        aws_rds_db_user: dbuser
-        aws_rds_db_engine: postgres
-        aws_rds_db_port: 5432
-        aws_rds_db_allocated_storage: 20
-        aws_rds_db_instance_class: db.t3.micro
-        aws_rds_db_final_snapshot:
-        aws_rds_db_multi_az: false
-        aws_rds_db_apply_immediately: true
+        SUBNET_PRIVATE_1=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} \
+          --cidr-block 10.10.3.0/24 --availability-zone ${{ secrets.AWS_REGION }}a \
+          --query 'Subnet.SubnetId' --output text)
+        SUBNET_PRIVATE_2=$(aws ec2 create-subnet --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} \
+          --cidr-block 10.10.4.0/24 --availability-zone ${{ secrets.AWS_REGION }}b \
+          --query 'Subnet.SubnetId' --output text)
+        echo "private_subnet_id=$SUBNET_PRIVATE_1" >> $GITHUB_OUTPUT
+        echo "private_subnet_id2=$SUBNET_PRIVATE_2" >> $GITHUB_OUTPUT
 
-        tf_state_bucket: project1-resources
-        tf_state_file_name_append: rds-dev-db
+    - name: Create Internet Gateway
+      id: create_igw
+      run: |
+        IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
+        aws ec2 attach-internet-gateway --internet-gateway-id $IGW_ID --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }}
+        echo "igw_id=$IGW_ID" >> $GITHUB_OUTPUT
 
-        # tf_stack_destroy: true
-        # tf_state_bucket_destroy: true
+    - name: Create Route Tables
+      id: route_tables
+      run: |
+        PUBLIC_RT=$(aws ec2 create-route-table --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} \
+          --query 'RouteTable.RouteTableId' --output text)
+        aws ec2 create-route --route-table-id $PUBLIC_RT --destination-cidr-block 0.0.0.0/0 --gateway-id ${{ env.igw_id }}
+        aws ec2 associate-route-table --route-table-id $PUBLIC_RT --subnet-id ${{ steps.subnets.outputs.public_subnet_id }}
+        aws ec2 associate-route-table --route-table-id $PUBLIC_RT --subnet-id ${{ steps.subnets.outputs.public_subnet_id2 }}
+        echo "PUBLIC_RT=$PUBLIC_RT" >> $GITHUB_ENV
+
+    - name: Create Security Group for RDS
+      id: create_rds_sg
+      run: |
+        RDS_SG=$(aws ec2 create-security-group --group-name RDS-Security-Group \
+          --description "Security group for RDS" --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} --query 'GroupId' --output text)
+        aws ec2 authorize-security-group-ingress --group-id $RDS_SG \
+          --protocol tcp --port 5432 --cidr 0.0.0.0/0
+        echo "db_sg_id=$RDS_SG" >> $GITHUB_OUTPUT
+
+    - name: Create DB Subnet Group
+      id: db_subnet_group
+      run: |
+        aws rds create-db-subnet-group \
+          --db-subnet-group-name "private-subnets-group" \
+          --db-subnet-group-description "Subnet group for RDS in private subnets" \
+          --subnet-ids ${{ steps.subnets.outputs.private_subnet_id }} ${{ steps.subnets.outputs.private_subnet_id2 }}
+        echo "DB Subnet Group created."
+
+
+
+
+
+
+
+    - name: Create RDS Instance
+      id: create_rds
+      run: |
+
+        # Create the RDS instance
+        aws rds create-db-instance \
+          --db-instance-identifier ${{ env.DB_INSTANCE_IDENTIFIER }} \
+          --db-name ${{ env.DB_NAME }} \
+          --master-username ${{ env.DB_USER }} \
+          # --master-user-password ${{ env.DB_PASSWORD }} \
+          --engine postgres \
+          --db-instance-class db.t3.micro \
+          --allocated-storage 20 \
+          --vpc-security-group-ids ${{ steps.create_rds_sg.outputs.db_sg_id }} \
+          --db-subnet-group-name "private-subnets-group" \
+          --port ${{ env.DB_PORT }} \
+          --no-multi-az \
+          --apply-immediately \
+          --backup-retention-period 0 # No automated backups
+
+
+    - name: Retrieve RDS Endpoint
+      id: get_endpoint
+      run: |
+        ENDPOINT=$(aws rds describe-db-instances \
+          --db-instance-identifier ${{ env.DB_INSTANCE_IDENTIFIER }} \
+          --query "DBInstances[0].Endpoint.Address" --output text)
+        echo "RDS Endpoint: $ENDPOINT"
+        echo "db_endpoint=$ENDPOINT" >> $GITHUB_OUTPUT
+
+
+
+        
+
+
+    # - id: deploy
+    #   uses: bitovi/github-actions-deploy-rds@v0.1.6
+    #   with:
+    #     aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #     aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #     aws_default_region: ${{ secrets.AWS_REGION }}
+
+    #     aws_vpc_create: true
+    #     aws_vpc_name: project1-vpc
+    #     # aws_vpc_cidr_block: 10.0.0.0/16
+    #     aws_vpc_public_subnets: 10.10.10.0/24,10.10.40.0/24
+    #     aws_vpc_private_subnets: 10.10.20.0/24,10.10.30.0/24
+    #     aws_vpc_availability_zones: ${{ secrets.AWS_REGION }}a,${{ secrets.AWS_REGION }}b
+
+    #     aws_rds_db_enable: false       
+    #     aws_rds_db_name: mydb
+    #     aws_rds_db_user: dbuser
+    #     aws_rds_db_engine: postgres
+    #     aws_rds_db_port: 5432
+    #     aws_rds_db_allocated_storage: 20
+    #     aws_rds_db_instance_class: db.t3.micro
+    #     aws_rds_db_final_snapshot:
+    #     aws_rds_db_multi_az: false
+    #     aws_rds_db_apply_immediately: true
+
+    #     tf_state_bucket: project1-resources
+    #     tf_state_file_name_append: rds-dev-db
+
+    #     # tf_stack_destroy: true
+    #     # tf_state_bucket_destroy: true
 
     - name: Create EC2 Security Group
       id: create_sg
       run: |
         SG_ID=$(aws ec2 create-security-group --group-name EC2-SG \
-          --vpc-id ${{ steps.deploy.outputs.aws_vpc_id }} --query 'GroupId' --output text)
+          --vpc-id ${{ steps.create_vpc.outputs.aws_vpc_id }} --query 'GroupId' --output text)
         echo "Security group created with ID: $SG_ID"
         echo "ec2_sg_id=$SG_ID" >> $GITHUB_OUTPUT
 
@@ -68,21 +183,21 @@ jobs:
         echo "Ingress rules added to security group: ${{ steps.create_sg.outputs.ec2_sg_id }}"
   
 
-    - name: Retrieve Public and Private Subnet IDs
-      id: subnets  # Step ID for accessing outputs
-      run: |
-        ALL_SUBNETS=$(aws ec2 describe-subnets \
-          --filters "Name=vpc-id,Values=${{ steps.deploy.outputs.aws_vpc_id }}" \
-          --query "Subnets[].[SubnetId, MapPublicIpOnLaunch]" \
-          --output json)
+    # - name: Retrieve Public and Private Subnet IDs
+    #   id: subnets  # Step ID for accessing outputs
+    #   run: |
+    #     ALL_SUBNETS=$(aws ec2 describe-subnets \
+    #       --filters "Name=vpc-id,Values=${{ steps.deploy.outputs.aws_vpc_id }}" \
+    #       --query "Subnets[].[SubnetId, MapPublicIpOnLaunch]" \
+    #       --output json)
 
-        # Separate subnets into public and private based on MapPublicIpOnLaunch
-          PUBLIC_SUBNET=$(echo $ALL_SUBNETS | jq -r '.[] | select(.[1] == true) | .[0]' | head -n 1)
-          PRIVATE_SUBNET=$(echo $ALL_SUBNETS | jq -r '.[] | select(.[1] == false) | .[0]' | head -n 1)
+    #     # Separate subnets into public and private based on MapPublicIpOnLaunch
+    #       PUBLIC_SUBNET=$(echo $ALL_SUBNETS | jq -r '.[] | select(.[1] == true) | .[0]' | head -n 1)
+    #       PRIVATE_SUBNET=$(echo $ALL_SUBNETS | jq -r '.[] | select(.[1] == false) | .[0]' | head -n 1)
 
-        # Store results in environment variables for use in subsequent steps
-        echo "public_subnet_id=$PUBLIC_SUBNET" >> $GITHUB_OUTPUT
-        echo "private_subnet_id=$PRIVATE_SUBNET" >> $GITHUB_OUTPUT
+    #     # Store results in environment variables for use in subsequent steps
+    #     echo "public_subnet_id=$PUBLIC_SUBNET" >> $GITHUB_OUTPUT
+    #     echo "private_subnet_id=$PRIVATE_SUBNET" >> $GITHUB_OUTPUT
 
 
 
