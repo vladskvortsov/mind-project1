@@ -116,7 +116,6 @@ jobs:
           --db-instance-identifier ${{ env.DB_INSTANCE_IDENTIFIER }} \
           --db-name ${{ env.DB_NAME }} \
           --master-username ${{ env.DB_USER }} \
-          # --master-user-password ${{ env.DB_PASSWORD }} \
           --engine postgres \
           --db-instance-class db.t3.micro \
           --allocated-storage 20 \
@@ -126,6 +125,7 @@ jobs:
           --no-multi-az \
           --apply-immediately \
           --backup-retention-period 0 # No automated backups
+          # --master-user-password ${{ env.DB_PASSWORD }} 
 
 
     - name: Retrieve RDS Endpoint
