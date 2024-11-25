@@ -211,6 +211,7 @@ jobs:
     - name: Retrieve RDS Endpoint
       id: get_endpoint
       run: |
+        sleep 10
         ENDPOINT=$(aws rds describe-db-instances \
           --db-instance-identifier ${{ env.DB_INSTANCE_IDENTIFIER }} \
           --query "DBInstances[0].Endpoint.Address" --output text)
@@ -326,7 +327,7 @@ jobs:
             --security-group-ids ${{ steps.create_redis_sg.outputs.elasticache_sg_id }} \
             --port 6379 \
             --engine-version 6.x \
-            --no-multi-az-enabled
+            --az-mode single-az
           
           echo "ElastiCache cluster created: my-redis-cluster"
         else
@@ -337,6 +338,7 @@ jobs:
       id: get_elasticache_endpoint
       run: |
         # Retrieve the ElastiCache endpoint
+        sleep 5
         ELASTICACHE_ENDPOINT=$(aws elasticache describe-cache-clusters \
           --cache-cluster-id my-redis-cluster \
           --show-cache-node-info \
