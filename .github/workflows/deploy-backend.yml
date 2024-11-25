@@ -315,10 +315,8 @@ jobs:
         if [ "$CACHE_SUBNET_GROUP" == "None" ]; then
           aws elasticache create-cache-subnet-group \
           --cache-subnet-group-name private-subnets-group \
-          --cache-subnet-group-description "Subnet group for Elasticache in private subnets"
+          --cache-subnet-group-description "Subnet group for Elasticache in private subnets" \
           --subnet-ids ${{ needs.deploy-rds.outputs.private_subnet_id }} ${{ needs.deploy-rds.outputs.private_subnet_id2 }}
-
-
 
           echo "Created Elasticache Subnet Group: private-subnets-group"
         else
