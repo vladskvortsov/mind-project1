@@ -446,14 +446,14 @@ jobs:
         terminate-on-post: false
         user-data: |
           #!/bin/bash
-          apt update -y
-          apt install -y docker.io docker-compose awscli
-          usermod -aG docker ubuntu
-          systemctl restart docker
+          sudo apt update -y
+          sudo apt install -y docker.io docker-compose awscli
+          sudo usermod -aG docker ubuntu
+          sudo systemctl restart docker
           # newgrp docker
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws configure set aws_secret_access_key  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          sudo aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          sudo aws configure set aws_secret_access_key  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          sudo aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
           cd /home/ubuntu/
           git clone https://github.com/vladskvortsov/mind.git
           cd mind/project1/
@@ -469,12 +469,10 @@ jobs:
           REDIS_HOST=${{ needs.deploy-elascticache.outputs.redis_endpoint }}
           REDIS_PORT=${{ env.REDIS_PORT }}
           REDIS_DB=${{ env.REDIS_DB }}
-          #REDIS_PASSWORD=mypassword
 
           CORS_ALLOWED_ORIGINS=${{ env.CORS_ALLOWED_ORIGINS }}" > vars.env
  
-          echo '
-          # version: '3.8'
+          echo '# version: '3.8'
           services:
             backend_rds:
               env_file:
@@ -508,7 +506,7 @@ jobs:
         aws ec2 modify-instance-attribute \
           --instance-id ${{ steps.create-ec2.outputs.instance-id }} \
           --groups "${{ needs.deploy-rds.outputs.db_sg_id }}" "${{ needs.deploy-elascticache.outputs.redis_sg_id }}" "${{ needs.deploy-rds.outputs.ec2_sg_id }}"
-
+        echo "${{ needs.deploy-rds.outputs.db_endpoint }}"
 
 
 
