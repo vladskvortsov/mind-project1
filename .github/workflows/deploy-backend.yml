@@ -308,6 +308,23 @@ jobs:
         fi
         echo "redis_sg_id=$SG_ID" >> $GITHUB_OUTPUT
 
+    - name: Create Cache Subnet Group
+      id: cache_subnet_group
+      run: |
+        CACHE_SUBNET_GROUP=$(aws elasticache describe-cache-subnet-groups --cache-subnet-group-name private-subnets-group --query "CacheSubnetGroups[0].CacheSubnetGroupName" --output text 2>/dev/null || echo "None")
+        if [ "$CACHE_SUBNET_GROUP" == "None" ]; then
+          aws elasticache create-cache-subnet-group \
+          --cache-subnet-group-name private-subnets-group \
+          --cache-subnet-group-description "Subnet group for Elasticache in private subnets"
+          --subnet-ids ${{ needs.deploy-rds.outputs.private_subnet_id }} ${{ needs.deploy-rds.outputs.private_subnet_id2 }}
+
+
+
+          echo "Created Elasticache Subnet Group: private-subnets-group"
+        else
+          echo "Using existing Elasticache Subnet Group: $CACHE_SUBNET_GROUP"
+        fi
+
     - name: Create or Use Existing ElastiCache Cluster
       id: create_elasticache
       run: |
