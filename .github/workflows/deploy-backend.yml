@@ -441,7 +441,7 @@ jobs:
           REDIS_PORT=${{ env.REDIS_PORT }}
           REDIS_DB=${{ env.REDIS_DB }}
 
-          CORS_ALLOWED_ORIGINS=${{ steps.get_cloudfront_endpoint.outputs.cloudfront_endpoint }}" > vars.env
+          CORS_ALLOWED_ORIGINS=https://${{ steps.get_cloudfront_endpoint.outputs.cloudfront_endpoint }}" > vars.env
  
           echo '# version: '3.8'
           services:
