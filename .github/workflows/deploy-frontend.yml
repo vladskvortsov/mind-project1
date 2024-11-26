@@ -97,7 +97,7 @@ jobs:
       - name: Create CloudFront Distribution if not exists
         id: create_cloudfront
         run: |
-                DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.amazonaws.com']].Id" --output text)
+                DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${{ secrets.AWS_S3_BUCKET_NAME }}.s3.amazonaws.com']].Id" --output text)
                 if [ "$DISTRIBUTION_ID" == "None" ]; then
                   DISTRIBUTION_ID=$(aws cloudfront create-distribution \
                     --distribution-config '{
