@@ -1,4 +1,4 @@
-name: Deploy Frontend, Backend and Docker Images to ECR
+name: Deploy Project
 on: 
   workflow_dispatch:
 jobs:
@@ -13,4 +13,3 @@ jobs:
     - deploy-frontend
     - deploy-to-ecr
     uses: ./.github/workflows/deploy-backend.yml
-    
