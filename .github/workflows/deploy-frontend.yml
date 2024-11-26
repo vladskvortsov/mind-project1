@@ -25,7 +25,7 @@ jobs:
       - name: Create S3 bucket if it doesn't exist
         id: create_s3_bucket
         run: |
-          BUCKET_NAME="project1-frontend-production" # Unique bucket name
+          BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_NAME }}" # Unique bucket name
           aws s3api head-bucket --bucket "$BUCKET_NAME" || aws s3api create-bucket --bucket "$BUCKET_NAME" --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}
           echo "AWS_BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
           echo "aws_bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
