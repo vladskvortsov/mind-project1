@@ -224,7 +224,7 @@ jobs:
     - name: Retrieve RDS Endpoint
       id: get_endpoint
       run: |
-        sleep 40
+        sleep 50
         ENDPOINT=$(aws rds describe-db-instances \
           --db-instance-identifier ${{ env.DB_INSTANCE_IDENTIFIER }} \
           --query "DBInstances[0].Endpoint.Address" --output text)
