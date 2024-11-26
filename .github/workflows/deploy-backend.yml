@@ -1,6 +1,18 @@
 name: Deploy VPC, EC2, RDS, ElasticCache
 on:
-  workflow_call: 
+  workflow_call:
+    secrets:
+        AWS_ACCESS_KEY_ID:
+          required: true
+        AWS_SECRET_ACCESS_KEY:
+          required: true
+        AWS_REGION: 
+          required: true
+        AWS_S3_BUCKET_NAME:
+          required: true
+        AWS_ACCOUNT_ID: 
+          required: true
+
   workflow_dispatch:
   # push:
   #   branches:
