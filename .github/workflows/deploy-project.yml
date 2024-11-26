@@ -2,8 +2,11 @@ name: Deploy Project
 on: 
   workflow_dispatch:
 jobs:
+
   deploy-to-ecr:
     uses: ./.github/workflows/deploy-to-ecr.yml
+    with:
+        aws-region: ${{ secrets.AWS_REGION }}
 
   deploy-frontend:
     uses: ./.github/workflows/deploy-frontend.yml
