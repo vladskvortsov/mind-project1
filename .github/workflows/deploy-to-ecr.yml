@@ -8,16 +8,16 @@ on:
           required: true
         AWS_REGION: 
           required: true
-    inputs:
-        aws-region: 
-          required: true
-          type: string
-        aws-access-key-id:
-          required: true
-          type: string
-        aws-secret-access-key:
-          required: true
-          type: string
+    # inputs:
+    #     aws-region: 
+    #       required: true
+    #       type: string
+    #     aws-access-key-id:
+    #       required: true
+    #       type: string
+    #     aws-secret-access-key:
+    #       required: true
+    #       type: string
 
   workflow_dispatch:
   # push:
