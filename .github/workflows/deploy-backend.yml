@@ -224,7 +224,7 @@ jobs:
     - name: Retrieve RDS Endpoint
       id: get_endpoint
       run: |
-        sleep 30
+        sleep 40
         ENDPOINT=$(aws rds describe-db-instances \
           --db-instance-identifier ${{ env.DB_INSTANCE_IDENTIFIER }} \
           --query "DBInstances[0].Endpoint.Address" --output text)
@@ -312,7 +312,7 @@ jobs:
       id: get_elasticache_endpoint
       run: |
         # Retrieve the ElastiCache endpoint
-        sleep 30
+        sleep 40
         ELASTICACHE_ENDPOINT=$(aws elasticache describe-cache-clusters \
           --cache-cluster-id my-redis-cluster \
           --show-cache-node-info \
@@ -391,11 +391,11 @@ jobs:
       id: get_cloudfront_endpoint
       run: |
         CLOUDFRONT_ENDPOINT=$(aws cloudfront list-distributions \
-          --query "DistributionList.Items[?Origins.Items[?Id=='${{ secrets.AWS_S3_BUCKET_NAME }}']].DomainName" \
+          --query "DistributionList.Items[?Origins.Items[?Id=='${{ secrets.AWS_S3_BUCKET_NAME }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com']].DomainName" \
           --output text)
 
         if [ -z "$CLOUDFRONT_ENDPOINT" ]; then
-          echo "No CloudFront distribution found with the specified origin name: ${{ secrets.AWS_S3_BUCKET_NAME }}"
+          echo "No CloudFront distribution found with the specified origin name: ${{ secrets.AWS_S3_BUCKET_NAME }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com"
         else
           echo "CloudFront endpoint retrieved: $CLOUDFRONT_ENDPOINT"
         fi
