@@ -206,6 +206,8 @@ jobs:
                     }' \
                     --query "Distribution.Id" --output text)
                       fi
+                      DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${{ secrets.AWS_S3_BUCKET_NAME }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com']].Id" --output text)
+
                       echo "aws_distribution_id=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
 
         # echo "$(aws cloudfront get-distribution-config --id E2HDCGYCPFSX9R)"
@@ -213,6 +215,7 @@ jobs:
       - name: Set S3 bucket policy to allow CloudFront access
         run: |
           DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${{ secrets.AWS_S3_BUCKET_NAME }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com']].Id" --output text)
+          echo "DISTRIBUTION_ID = $DISTRIBUTION_ID"
           echo "DISTRIBUTION_ID = ${{ steps.create_cloudfront.outputs.aws_distribution_id }}"
 
 
