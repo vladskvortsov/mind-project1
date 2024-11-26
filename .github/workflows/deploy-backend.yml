@@ -27,7 +27,6 @@ jobs:
       aws_vpc_id: ${{ steps.create_vpc.outputs.aws_vpc_id }}
       ec2_sg_id: ${{ steps.create_sg.outputs.ec2_sg_id }}
       db_sg_id: ${{ steps.create_rds_sg.outputs.db_sg_id }}
-      db_endpoint: ${{ steps.get_endpoint.outputs.db_endpoint }}
       private_subnet_id: ${{ steps.subnets.outputs.private_subnet_id }}
       private_subnet_id2: ${{ steps.subnets.outputs.private_subnet_id2 }}
       public_subnet_id: ${{ steps.subnets.outputs.public_subnet_id }}
@@ -220,27 +219,10 @@ jobs:
         fi
 
 
-
-    - name: Retrieve RDS Endpoint
-      id: get_endpoint
-      run: |
-        sleep 50
-        ENDPOINT=$(aws rds describe-db-instances \
-          --db-instance-identifier ${{ env.DB_INSTANCE_IDENTIFIER }} \
-          --query "DBInstances[0].Endpoint.Address" --output text)
-        echo "RDS Endpoint: $ENDPOINT"
-        echo "db_endpoint=$ENDPOINT" >> $GITHUB_OUTPUT
-
-    - name: Retrieve RDS Endpoint
-      run: |
-          echo "${{ steps.get_endpoint.outputs.db_endpoint }}"
-
-
   deploy-elascticache:
     runs-on: ubuntu-latest
     needs: deploy-rds
     outputs:
-      redis_endpoint: ${{ steps.get_elasticache_endpoint.outputs.elasticache_endpoint }}
       redis_sg_id: ${{ steps.create_redis_sg.outputs.redis_sg_id }}
     steps:
     - name: Configure AWS credentials
@@ -308,19 +290,6 @@ jobs:
           echo "ElastiCache cluster already exists: $ELASTICACHE_CLUSTER"
         fi
 
-    - name: Retrieve ElastiCache Endpoint
-      id: get_elasticache_endpoint
-      run: |
-        # Retrieve the ElastiCache endpoint
-        sleep 40
-        ELASTICACHE_ENDPOINT=$(aws elasticache describe-cache-clusters \
-          --cache-cluster-id my-redis-cluster \
-          --show-cache-node-info \
-          --query "CacheClusters[0].CacheNodes[0].Endpoint.Address" --output text 2>/dev/null || echo "None")
-        
-         echo "ElastiCache endpoint: $ELASTICACHE_ENDPOINT"
-        echo "elasticache_endpoint=$ELASTICACHE_ENDPOINT" >> $GITHUB_OUTPUT
-
   
   deploy-ec2:
     runs-on: ubuntu-latest
@@ -329,6 +298,8 @@ jobs:
      - deploy-elascticache
     outputs:
       instance-id: ${{ steps.create-ec2.outputs.instance-id }}
+      db_endpoint: ${{ steps.get_rds_endpoint.outputs.db_endpoint }}
+      elasticache_endpoint: ${{ steps.get_elasticache_endpoint.outputs.elasticache_endpoint }}
       cloudfront_endpoint: ${{ steps.get_cloudfront_endpoint.outputs.cloudfront_endpoint }}
     env:  # Set secrets as environment variables for the job
       DB_NAME: mydb
@@ -387,6 +358,30 @@ jobs:
                 aws iam add-role-to-instance-profile --instance-profile-name project1-ecr-access --role-name ecr-pull-role
               fi
 
+    - name: Retrieve ElastiCache Endpoint
+      id: get_elasticache_endpoint
+      run: |
+        # Retrieve the ElastiCache endpoint
+        sleep 40
+        ELASTICACHE_ENDPOINT=$(aws elasticache describe-cache-clusters \
+          --cache-cluster-id my-redis-cluster \
+          --show-cache-node-info \
+          --query "CacheClusters[0].CacheNodes[0].Endpoint.Address" --output text 2>/dev/null || echo "None")
+        
+         echo "ElastiCache endpoint: $ELASTICACHE_ENDPOINT"
+        echo "elasticache_endpoint=$ELASTICACHE_ENDPOINT" >> $GITHUB_OUTPUT
+
+    - name: Retrieve RDS Endpoint
+      id: get_rds_endpoint
+      run: |
+        sleep 50
+        ENDPOINT=$(aws rds describe-db-instances \
+          --db-instance-identifier mydb \
+          --query "DBInstances[0].Endpoint.Address" --output text)
+        echo "RDS Endpoint: $ENDPOINT"
+        echo "db_endpoint=$ENDPOINT" >> $GITHUB_OUTPUT
+
+
     - name: Retrieve CloudFront Endpoint
       id: get_cloudfront_endpoint
       run: |
@@ -401,6 +396,9 @@ jobs:
         fi
 
         echo "cloudfront_endpoint=$CLOUDFRONT_ENDPOINT" >> $GITHUB_OUTPUT
+
+
+
 
     - name: Setup EC2
       id: create-ec2
@@ -434,10 +432,10 @@ jobs:
           DB_NAME=${{ env.DB_NAME }}
           DB_USER=${{ env.DB_USER }}
           DB_PASSWORD=${{ env.DB_PASSWORD }}
-          DB_HOST=${{ needs.deploy-rds.outputs.db_endpoint }}
+          DB_HOST=${{ steps.get_rds_endpoint.outputs.db_endpoint }} 
           DB_PORT=${{ env.DB_PORT }}
 
-          REDIS_HOST=${{ needs.deploy-elascticache.outputs.redis_endpoint }}
+          REDIS_HOST=${{ steps.get_elasticache_endpoint.outputs.elasticache_endpoint }}
           REDIS_PORT=${{ env.REDIS_PORT }}
           REDIS_DB=${{ env.REDIS_DB }}
 
@@ -477,4 +475,3 @@ jobs:
         aws ec2 modify-instance-attribute \
           --instance-id ${{ steps.create-ec2.outputs.instance-id }} \
           --groups "${{ needs.deploy-rds.outputs.db_sg_id }}" "${{ needs.deploy-elascticache.outputs.redis_sg_id }}" "${{ needs.deploy-rds.outputs.ec2_sg_id }}"
-        echo "${{ needs.deploy-rds.outputs.db_endpoint }}" 
