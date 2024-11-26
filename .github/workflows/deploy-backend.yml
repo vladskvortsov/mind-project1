@@ -297,6 +297,7 @@ jobs:
      - deploy-rds
      - deploy-elascticache
     outputs:
+      ec2_public_ip: ${{ steps.get_ec2_public_ip.outputs.ec2_public_ip }}
       instance-id: ${{ steps.create-ec2.outputs.instance-id }}
       db_endpoint: ${{ steps.get_rds_endpoint.outputs.db_endpoint }}
       elasticache_endpoint: ${{ steps.get_elasticache_endpoint.outputs.elasticache_endpoint }}
@@ -475,3 +476,32 @@ jobs:
         aws ec2 modify-instance-attribute \
           --instance-id ${{ steps.create-ec2.outputs.instance-id }} \
           --groups "${{ needs.deploy-rds.outputs.db_sg_id }}" "${{ needs.deploy-elascticache.outputs.redis_sg_id }}" "${{ needs.deploy-rds.outputs.ec2_sg_id }}"
+
+    - name: Retrieve Public IP Address of EC2 Instance
+      id: get_ec2_public_ip
+      run: |
+
+        # Retrieve the public IP address
+        PUBLIC_IP=$(aws ec2 describe-instances \
+          --instance-ids ${{ steps.create-ec2.outputs.instance-id }} \
+          --query "Reservations[0].Instances[0].PublicIpAddress" \
+          --output text)
+
+        if [ "$PUBLIC_IP" == "None" ]; then
+          echo "Error: The EC2 instance ${{ steps.create-ec2.outputs.instance-id }} does not have a public IP address."
+        else
+          echo "Public IP address for EC2 instance $INSTANCE_ID: $PUBLIC_IP"
+        fi
+
+        echo "ec2_public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
+
+    - name: Retrieve Public IP Address of EC2 Instance
+      run: |
+        echo "
+        {
+            "BACKEND_RDS_URL": "http://${{ steps.get_ec2_public_ip.outputs.ec2_public_ip }}:8000/test_connection/",
+            "BACKEND_REDIS_URL": "http://${{ steps.get_ec2_public_ip.outputs.ec2_public_ip }}:8003/test_connection/"
+        }" > config.json
+
+          aws s3 sync ./config.json s3://$AWS_BUCKET_NAME --delete
+        

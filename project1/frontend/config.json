@@ -1,5 +1,5 @@
 {
-    "BACKEND_RDS_URL": "http://vladskvortsov-mind-master-1239776333.eu-north-1.elb.amazonaws.com:8000/test_connection/",
-    "BACKEND_REDIS_URL": "http://vladskvortsov-mind-master-1239776333.eu-north-1.elb.amazonaws.com:8003/test_connection/"
+    "BACKEND_RDS_URL": "http://13.49.245.3:8000/test_connection/",
+    "BACKEND_REDIS_URL": "http://13.49.245.3:8003/test_connection/"
 }
   
