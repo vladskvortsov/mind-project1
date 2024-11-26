@@ -1,5 +1,6 @@
 name: Deploy S3 and CloudFront
-on: 
+on:
+  workflow_call: 
   workflow_dispatch:
   push:
     branches:
@@ -225,5 +226,6 @@ jobs:
       # Step 4: Invalidate CloudFront Cache
       - name: Invalidate CloudFront cache
         run: |
+          sleep 20
           aws cloudfront create-invalidation --distribution-id ${{ steps.create_cloudfront.outputs.aws_distribution_id }} --paths "/*"
 

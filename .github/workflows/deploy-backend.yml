@@ -1,5 +1,6 @@
 name: Deploy VPC, EC2, RDS, ElasticCache
-on: 
+on:
+  workflow_call: 
   workflow_dispatch:
   # push:
   #   branches:

@@ -1,7 +1,6 @@
 name: Delete Resources
 on:
-  workflow_dispatch:  # Trigger workflow manually
-
+  workflow_dispatch:
 jobs:
   delete_resources:
     runs-on: ubuntu-latest
@@ -15,18 +14,3 @@ jobs:
         aws-region: ${{ secrets.AWS_REGION }}
 
 
-    - id: deploy
-      name: Deploy EC2 and RDS
-      uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.1
-      with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws_default_region: ${{ secrets.AWS_REGION }}
-
-
-        aws_vpc_create: false
-        aws_ec2_instance_create: false
-        aws_rds_db_enable: false       
-
-        tf_stack_destroy: true
-        tf_state_bucket_destroy: true

@@ -1,5 +1,6 @@
 name: Deploy images to ECR
 on: 
+  workflow_call:
   workflow_dispatch:
   # push:
   #   branches:
@@ -24,17 +25,14 @@ jobs:
          aws_ecr_repo_name: project1-backend
          image_tag: backend-rds
          working_directory: ./project1/backend_rds/
-     - run: |
-         echo "Image Created:  ${{ env.image }}"
-         echo "Tag Created: ${{ env.tag }}"
+
 
   deploy-redis-backend-to-ecr:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
         uses: actions/checkout@v3
-      - name: do something to the code
-        run: echo "Changed code" > text.txt
+
       - id: ecr-publish
         name: Build image
         uses: bitovi/github-actions-ecr-publish@v0.1.0
@@ -45,6 +43,3 @@ jobs:
           aws_ecr_repo_name: project1-backend
           image_tag: backend-redis
           working_directory: ./project1/backend_redis/
-      - run: |
-          echo "Image Created:  ${{ env.image }}"
-          echo "Tag Created: ${{ env.tag }}"
