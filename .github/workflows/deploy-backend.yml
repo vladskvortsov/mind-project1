@@ -503,5 +503,5 @@ jobs:
             "BACKEND_REDIS_URL": "http://${{ steps.get_ec2_public_ip.outputs.ec2_public_ip }}:8003/test_connection/"
         }" > config.json
 
-          aws s3 sync ./config.json s3://$AWS_BUCKET_NAME --delete
+          aws s3 sync ./config.json s3://${{ secrets.AWS_S3_BUCKET_NAME }} --delete
         
