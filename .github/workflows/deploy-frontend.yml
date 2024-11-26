@@ -110,8 +110,8 @@ jobs:
                             "Quantity": 1,
                             "Items": [
                                 {
-                                    "Id": "${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com",
-                                    "DomainName": "${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com",
+                                    "Id": "${{ secrets.AWS_S3_BUCKET_NAME }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com",
+                                    "DomainName": "${{ secrets.AWS_S3_BUCKET_NAME }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com",
                                     "OriginPath": "",
                                     "CustomHeaders": {
                                         "Quantity": 0
@@ -132,7 +132,7 @@ jobs:
                             "Quantity": 0
                         },
                         "DefaultCacheBehavior": {
-                            "TargetOriginId": "${{ needs.create-sync-s3.outputs.aws_bucket_name }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com",
+                            "TargetOriginId": "${{ secrets.AWS_S3_BUCKET_NAME }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com",
                             "ForwardedValues": {
                                 "QueryString": false,
                                 "Cookies": {
@@ -212,7 +212,7 @@ jobs:
       # Step 3: Set S3 bucket policy to allow CloudFront access
       - name: Set S3 bucket policy to allow CloudFront access
         run: |
-          aws s3api put-bucket-policy --bucket "${{ needs.create-sync-s3.outputs.aws_bucket_name }}" --policy '{
+          aws s3api put-bucket-policy --bucket "${{ secrets.AWS_S3_BUCKET_NAME }}" --policy '{
                       "Version": "2008-10-17",
                       "Id": "PolicyForCloudFrontPrivateContent",
                       "Statement": [
@@ -223,7 +223,7 @@ jobs:
                                   "Service": "cloudfront.amazonaws.com"
                               },
                               "Action": "s3:GetObject",
-                              "Resource": "arn:aws:s3:::${{ needs.create-sync-s3.outputs.aws_bucket_name }}/*",
+                              "Resource": "arn:aws:s3:::${{ secrets.AWS_S3_BUCKET_NAME }}/*",
                               "Condition": {
                                   "StringEquals": {
                                       "AWS:SourceArn": "arn:aws:cloudfront::194722414339:distribution/${{ steps.create_cloudfront.outputs.aws_distribution_id }}"
