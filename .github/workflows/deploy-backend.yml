@@ -501,9 +501,9 @@ jobs:
         {
             "BACKEND_RDS_URL": "http://${{ steps.get_ec2_public_ip.outputs.ec2_public_ip }}:8000/test_connection/",
             "BACKEND_REDIS_URL": "http://${{ steps.get_ec2_public_ip.outputs.ec2_public_ip }}:8003/test_connection/"
-        }" > /home/runner/work/mind/mind/config.json
-        cd /home/runner/work/mind/mind/
+        }" > /home/runner/work/mind/mind/project1/frontend/config.json
+        cd /home/runner/work/mind/mind/project1/frontend/
         ls
         cat config.json
-          aws s3 sync ./config.json s3://${{ secrets.AWS_S3_BUCKET_NAME }} --delete
+          aws s3 sync ./project1/frontend/ s3://${{ secrets.AWS_S3_BUCKET_NAME }} --delete
         
