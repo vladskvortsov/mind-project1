@@ -105,7 +105,7 @@ jobs:
                         "Aliases": {
                             "Quantity": 0
                         },
-                        "DefaultRootObject": "templates/index.html",
+                        "DefaultRootObject": "index.html",
                         "Origins": {
                             "Quantity": 1,
                             "Items": [
