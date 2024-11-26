@@ -371,6 +371,7 @@ jobs:
      - deploy-elascticache
     outputs:
       instance-id: ${{ steps.create-ec2.outputs.instance-id }}
+      cloudfront_endpoint: ${{ steps.get_cloudfront_endpoint.outputs.cloudfront_endpoint }}
     env:  # Set secrets as environment variables for the job
       DB_NAME: mydb
       DB_USER: dbuser
@@ -378,7 +379,6 @@ jobs:
       DB_PASSWORD: Mypassword11
       REDIS_PORT: 6379
       REDIS_DB: 0
-      CORS_ALLOWED_ORIGINS: https://d2xytvnh88jebv.cloudfront.net
       
     steps:
     - name: Checkout code
@@ -429,6 +429,21 @@ jobs:
                 aws iam add-role-to-instance-profile --instance-profile-name project1-ecr-access --role-name ecr-pull-role
               fi
 
+    - name: Retrieve CloudFront Endpoint
+      id: get_cloudfront_endpoint
+      run: |
+        CLOUDFRONT_ENDPOINT=$(aws cloudfront list-distributions \
+          --query "DistributionList.Items[?Origins.Items[?Id=='${{ secrets.AWS_S3_BUCKET_NAME }}']].DomainName" \
+          --output text)
+
+        if [ -z "$CLOUDFRONT_ENDPOINT" ]; then
+          echo "No CloudFront distribution found with the specified origin name: ${{ secrets.AWS_S3_BUCKET_NAME }}"
+        else
+          echo "CloudFront endpoint retrieved: $CLOUDFRONT_ENDPOINT"
+        fi
+
+        echo "cloudfront_endpoint=$CLOUDFRONT_ENDPOINT" >> $GITHUB_OUTPUT
+
     - name: Setup EC2
       id: create-ec2
       uses: truemark/aws-ec2-run-instance-action@v5
@@ -468,7 +483,7 @@ jobs:
           REDIS_PORT=${{ env.REDIS_PORT }}
           REDIS_DB=${{ env.REDIS_DB }}
 
-          CORS_ALLOWED_ORIGINS=${{ env.CORS_ALLOWED_ORIGINS }}" > vars.env
+          CORS_ALLOWED_ORIGINS=${{ steps.get_cloudfront_endpoint.outputs.cloudfront_endpoint }}" > vars.env
  
           echo '# version: '3.8'
           services:
