@@ -497,8 +497,7 @@ jobs:
 
     - name: Create config.json
       run: |
-        echo "
-        {
+        echo "{
             "BACKEND_RDS_URL": "http://${{ steps.get_ec2_public_ip.outputs.ec2_public_ip }}:8000/test_connection/",
             "BACKEND_REDIS_URL": "http://${{ steps.get_ec2_public_ip.outputs.ec2_public_ip }}:8003/test_connection/"
         }" > /home/runner/work/mind/mind/project1/frontend/config.json
