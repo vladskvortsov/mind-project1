@@ -519,7 +519,7 @@ jobs:
         aws ec2 modify-instance-attribute \
           --instance-id ${{ steps.create-ec2.outputs.instance-id }} \
           --groups "${{ needs.deploy-rds.outputs.db_sg_id }}" "${{ needs.deploy-elascticache.outputs.redis_sg_id }}" "${{ needs.deploy-rds.outputs.ec2_sg_id }}"
-        echo "${{ needs.deploy-rds.outputs.db_endpoint }}"
+        echo "${{ needs.deploy-rds.outputs.db_endpoint }}" 
 
 
 
