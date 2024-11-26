@@ -9,8 +9,34 @@ on:
   #     - 'project1/backend_redis/Dockerfile'
   #     - 'project1/backend_rds/Dockerfile'
 jobs:
+  create-ecr-repository:
+   runs-on: ubuntu-latest
+   steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Create ECR Repository
+      run: |
+        REPO_NAME="project1-backend"
+        
+        # Check if the repository already exists
+        EXISTING_REPO=$(aws ecr describe-repositories --repository-names $REPO_NAME --query "repositories[0].repositoryName" --output text 2>/dev/null || echo "None")
+        
+        if [ "$EXISTING_REPO" == "None" ]; then
+          echo "ECR repository does not exist. Creating repository..."
+          aws ecr create-repository --repository-name $REPO_NAME
+          echo "ECR repository created: $REPO_NAME"
+        else
+          echo "Using existing ECR repository: $EXISTING_REPO"
+        fi
+        
   deploy-rds-backend-to-ecr:
    runs-on: ubuntu-latest
+   needs: create-ecr-repository
    steps:
      - name: Checkout 
        uses: actions/checkout@v3
@@ -29,6 +55,7 @@ jobs:
 
   deploy-redis-backend-to-ecr:
     runs-on: ubuntu-latest
+    needs: create-ecr-repository
     steps:
       - name: Checkout 
         uses: actions/checkout@v3
