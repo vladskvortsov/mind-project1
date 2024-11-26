@@ -212,7 +212,7 @@ jobs:
     - name: Retrieve RDS Endpoint
       id: get_endpoint
       run: |
-        sleep 25
+        sleep 30
         ENDPOINT=$(aws rds describe-db-instances \
           --db-instance-identifier ${{ env.DB_INSTANCE_IDENTIFIER }} \
           --query "DBInstances[0].Endpoint.Address" --output text)
@@ -355,7 +355,7 @@ jobs:
       id: get_elasticache_endpoint
       run: |
         # Retrieve the ElastiCache endpoint
-        sleep 25
+        sleep 30
         ELASTICACHE_ENDPOINT=$(aws elasticache describe-cache-clusters \
           --cache-cluster-id my-redis-cluster \
           --show-cache-node-info \
