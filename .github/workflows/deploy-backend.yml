@@ -354,7 +354,7 @@ jobs:
       id: get_elasticache_endpoint
       run: |
         # Retrieve the ElastiCache endpoint
-        sleep 10
+        sleep 25
         ELASTICACHE_ENDPOINT=$(aws elasticache describe-cache-clusters \
           --cache-cluster-id my-redis-cluster \
           --show-cache-node-info \
@@ -362,7 +362,6 @@ jobs:
         
          echo "ElastiCache endpoint: $ELASTICACHE_ENDPOINT"
         echo "elasticache_endpoint=$ELASTICACHE_ENDPOINT" >> $GITHUB_OUTPUT
-        echo "${{ needs.deploy-rds.outputs.db_endpoint }}"
 
   
   deploy-ec2:
