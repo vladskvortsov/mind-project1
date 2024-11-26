@@ -212,6 +212,8 @@ jobs:
       # Step 3: Set S3 bucket policy to allow CloudFront access
       - name: Set S3 bucket policy to allow CloudFront access
         run: |
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${{ secrets.AWS_S3_BUCKET_NAME }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com']].Id" --output text)
+          
           aws s3api put-bucket-policy --bucket "${{ secrets.AWS_S3_BUCKET_NAME }}" --policy '{
                       "Version": "2008-10-17",
                       "Id": "PolicyForCloudFrontPrivateContent",
@@ -226,7 +228,7 @@ jobs:
                               "Resource": "arn:aws:s3:::${{ secrets.AWS_S3_BUCKET_NAME }}/*",
                               "Condition": {
                                   "StringEquals": {
-                                      "AWS:SourceArn": "arn:aws:cloudfront::194722414339:distribution/${{ steps.create_cloudfront.outputs.aws_distribution_id }}"
+                                      "AWS:SourceArn": "arn:aws:cloudfront::194722414339:distribution/$DISTRIBUTION_ID"
                                   }
                               }
                           }
