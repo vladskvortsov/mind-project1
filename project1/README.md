@@ -54,15 +54,11 @@ Fork the repository to your GitHub account. Clone the repository to your local m
 Go to Settings > Secrets and Variables > Actions in your GitHub repository.
 Add the following secrets:
 
-AWS_ACCESS_KEY_ID: IAM access key for AWS API operations.
-
-AWS_SECRET_ACCESS_KEY: Secret key paired with the access key.
-
-AWS_REGION: The AWS region where resources will be created (e.g., us-east-1).
-
-AWS_ACCOUNT_ID: ID number of your account (e.g. 111122244444).
-
-AWS_S3_BUCKET_NAME: Name for your S3 bucket to create.
+    AWS_ACCESS_KEY_ID: IAM access key for AWS API operations.
+    AWS_SECRET_ACCESS_KEY: Secret key paired with the access key.
+    AWS_REGION: The AWS region where resources will be created (e.g., us-east-1).
+    AWS_ACCOUNT_ID: ID number of your account (e.g. 111122244444).
+    AWS_S3_BUCKET_NAME: Name for your S3 bucket to create.
 
 ### Step 3: Deploy AWS Resources
 Trigger the _deploy-project_ workflow to deploy the whole infrastructure.
