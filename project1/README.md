@@ -76,6 +76,6 @@ You can use CI/CD workflows for further updates or scaling.
 
 ## Key Notes: 
 > Resource Costs: Ensure you understand AWS pricing to manage project costs effectively.
-Security: Use the least privileged access for AWS credentials. `Don't paste AWS credentials anywhere excluding GitHub Secrets`
-Debugging: You can monitor the infrastructure deploying in GitHub Action logs, and find out errors if they present.
-Documentation: Don't forget to update the repository’s README.md to reflect current workflows and configurations.
+> Security: Use the least privileged access for AWS credentials. `Don't paste AWS credentials anywhere excluding GitHub Secrets`
+> Debugging: You can monitor the infrastructure deploying in GitHub Action logs, and find out errors if they present.
+> Documentation: Don't forget to update the repository’s README.md to reflect current workflows and configurations.
