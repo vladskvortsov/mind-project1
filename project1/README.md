@@ -82,7 +82,7 @@ Copy Cloudfront endpoint from your AWS console and access the frontend page.
 
 You can use CI/CD workflows for further updates or scaling.
 
-## Key Notes:
+## Key Notes: 
 > Resource Costs: Ensure you understand AWS pricing to manage project costs effectively.
 Security: Use the least privileged access for AWS credentials. `Don't paste AWS credentials anywhere excluding GitHub Secrets`
 Debugging: You can monitor the infrastructure deploying in GitHub Action logs, and find out errors if they present.
