@@ -11,17 +11,9 @@ This is the pipeline for deploying dockerized backend images to EC2 (through pri
 - AWS Account
 - Github Account
 
-## Secrets Configuration
-The project requires these secrets in your GitHub repository:
-
-AWS_ACCESS_KEY_ID: IAM access key for AWS API operations.
-AWS_SECRET_ACCESS_KEY: Secret key paired with the access key.
-AWS_REGION: The AWS region where resources will be created (e.g., us-east-1).
-AWS_ACCOUNT_ID: ID number of your account (e.g. 111122244444)
-AWS_S3_BUCKET_NAME: Name for your S3 bucket to create
-
 ## Environmental variables:
 Variables for backend used by example phyton code, if you wanna use your own containers you should provide your vars in the _deploy-backend.yml_.
+
     DB_NAME
     DB_USER
     DB_PASSWORD 
@@ -63,10 +55,14 @@ Go to Settings > Secrets and Variables > Actions in your GitHub repository.
 Add the following secrets:
 
 AWS_ACCESS_KEY_ID: IAM access key for AWS API operations.
+
 AWS_SECRET_ACCESS_KEY: Secret key paired with the access key.
+
 AWS_REGION: The AWS region where resources will be created (e.g., us-east-1).
-AWS_ACCOUNT_ID: ID number of your account (e.g. 111122244444)
-AWS_S3_BUCKET_NAME: Name for your S3 bucket to create
+
+AWS_ACCOUNT_ID: ID number of your account (e.g. 111122244444).
+
+AWS_S3_BUCKET_NAME: Name for your S3 bucket to create.
 
 ### Step 3: Deploy AWS Resources
 Trigger the _deploy-project_ workflow to deploy the whole infrastructure.
