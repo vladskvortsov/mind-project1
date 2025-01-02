@@ -18,8 +18,8 @@ on:
   #   branches:
   #     - main
   #   paths:
-  #     - 'project1/backend_redis/*'
-  #     - 'project1/backend_rds/*'
+  #     - 'backend_redis/*'
+  #     - 'backend_rds/*'
 jobs:
   deploy-rds:
     runs-on: ubuntu-latest 
@@ -338,14 +338,14 @@ jobs:
       run: |
         aws iam get-role --role-name ecr-pull-role || \
         aws iam create-role --role-name ecr-pull-role \
-          --assume-role-policy-document file://project1/ecr-assume-role.json
+          --assume-role-policy-document file://ecr-assume-role.json
 
     - name: Attach ECR Permissions Policy
       run: |
         aws iam put-role-policy \
           --role-name ecr-pull-role \
           --policy-name AmazonEC2ContainerRegistryPullOnly \
-          --policy-document file://project1/ecr-pull-role.json
+          --policy-document file://ecr-pull-role.json
 
 
     - name: Attach Role to the profile
@@ -425,8 +425,8 @@ jobs:
           sudo aws configure set aws_secret_access_key  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           sudo aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
           cd /home/ubuntu/
-          git clone https://github.com/vladskvortsov/mind.git
-          cd mind/project1/
+          git clone https://github.com/vladskvortsov/mind-project1.git
+          cd mind-project1/
           echo "SECRET_KEY=my-secret-key
           DEBUG=False
 
@@ -500,7 +500,7 @@ jobs:
         echo '{
             "BACKEND_RDS_URL": "http://${{ steps.get_ec2_public_ip.outputs.ec2_public_ip }}:8000/test_connection/",
             "BACKEND_REDIS_URL": "http://${{ steps.get_ec2_public_ip.outputs.ec2_public_ip }}:8003/test_connection/"
-        }' > /home/runner/work/mind/mind/project1/frontend/config.json
+        }' > /home/runner/work/mind-project1/mind-project1/frontend/config.json
         
-          aws s3 sync ./project1/frontend/ s3://${{ secrets.AWS_S3_BUCKET_NAME }} --delete
+          aws s3 sync ./frontend/ s3://${{ secrets.AWS_S3_BUCKET_NAME }} --delete
         

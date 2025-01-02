@@ -14,8 +14,8 @@ on:
   #   branches:
   #     - main
   #   paths:
-  #     - 'project1/backend_redis/Dockerfile'
-  #     - 'project1/backend_rds/Dockerfile'
+  #     - 'backend_redis/*'
+  #     - 'backend_rds/*'
 jobs:
   create-ecr-repository:
    runs-on: ubuntu-latest
@@ -58,7 +58,7 @@ jobs:
          aws_default_region: ${{ secrets.AWS_REGION }}
          aws_ecr_repo_name: project1-backend
          image_tag: backend-rds
-         working_directory: ./project1/backend_rds/
+         working_directory: ./backend_rds/
 
 
   deploy-redis-backend-to-ecr:
@@ -77,4 +77,4 @@ jobs:
           aws_default_region: ${{ secrets.AWS_REGION }}
           aws_ecr_repo_name: project1-backend
           image_tag: backend-redis
-          working_directory: ./project1/backend_redis/
+          working_directory: ./backend_redis/
